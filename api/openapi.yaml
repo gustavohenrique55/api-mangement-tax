@@ -1,0 +1,951 @@
+openapi: 3.1.2
+info:
+  title: API Management Tax
+  version: 0.1.0
+  summary: Governança tributária multi-jurisdicional para América Latina e Caribe
+  description: >-
+    Contrato inicial do produto interno. O nome da organização é configuração do ambiente;
+    exemplos usam dados sintéticos e não representam aconselhamento jurídico ou tributário.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: /
+    description: Mesmo host da aplicação
+tags:
+  - name: Platform
+    description: Disponibilidade e metadados operacionais do serviço.
+  - name: Identity
+    description: Contexto efetivo da identidade autenticada.
+  - name: Jurisdictions
+    description: Países e regiões cobertos pelo programa tributário.
+  - name: Audit
+    description: Evidências técnicas de alterações e verificação de integridade.
+  - name: LogisticsTax
+    description: Operações, entidades, rotas, aduana, documentos, recuperação, risco e integrações da empresa logística.
+  - name: Indicators
+    description: Scorecard IDE, ETR, SLA, contingências e reporte executivo previstos no plano de ação.
+  - name: Governance
+    description: Parâmetros do CFO, alçadas e gestão da rede regional de escritórios tributários.
+  - name: Demo
+    description: Cenário regional sintético, idempotente e isolado por tenant.
+paths:
+  /v1/health:
+    get:
+      summary: Consultar a saúde do serviço
+      tags: [Platform]
+      operationId: getHealth
+      security: []
+      responses:
+        "200":
+          description: Serviço disponível
+          headers:
+            X-Correlation-ID:
+              $ref: "#/components/headers/CorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: Serviço temporariamente indisponível
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /v1/identity-context:
+    get:
+      summary: Consultar o contexto da identidade atual
+      tags: [Identity]
+      operationId: getIdentityContext
+      responses:
+        "200":
+          description: Identidade e escopos efetivos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityContext"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/reference/logistics-tax:
+    get:
+      summary: Consultar classificações tributário-logísticas
+      tags: [LogisticsTax]
+      operationId: getLogisticsTaxReference
+      responses:
+        "200": { description: Modais e tipos de operação suportados }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/indicators/office-scorecards:
+    get:
+      summary: Listar scorecards trimestrais dos escritórios
+      tags: [Indicators]
+      operationId: listOfficeScorecards
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Calcular IDE com os onze indicadores ponderados
+      tags: [Indicators]
+      operationId: createOfficeScorecard
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/indicators/etr-measurements:
+    get:
+      summary: Listar medições de ETR por país e trimestre
+      tags: [Indicators]
+      operationId: listEtrMeasurements
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Calcular ETR corrente, diferido, Pilar 2 e variações
+      tags: [Indicators]
+      operationId: createEtrMeasurement
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/indicators/demands:
+    get:
+      summary: Listar demandas e situação de SLA
+      tags: [Indicators]
+      operationId: listTaxDemands
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Registrar demanda e calcular prioridade e cumprimento de SLA
+      tags: [Indicators]
+      operationId: createTaxDemand
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/indicators/contingencies:
+    get:
+      summary: Listar contingências e respectivas exposições
+      tags: [Indicators]
+      operationId: listTaxContingencies
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Registrar contingência, aging, baseline e apetite de risco
+      tags: [Indicators]
+      operationId: createTaxContingency
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/indicators/executive-dashboard:
+    get:
+      summary: Consolidar IDE, ETR, SLA e risco para CFO e Board
+      tags: [Indicators]
+      operationId: getExecutiveIndicatorsDashboard
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema: { type: string, pattern: "^\\d{4}-Q[1-4]$" }
+      responses:
+        "200":
+          description: Indicadores executivos consolidados para o tenant
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/operational-profiles:
+    get:
+      summary: Listar perfis operacionais por jurisdição
+      tags: [LogisticsTax]
+      operationId: listOperationalProfiles
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Criar perfil operacional
+      tags: [LogisticsTax]
+      operationId: createOperationalProfile
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/legal-entities:
+    get:
+      summary: Listar entidades legais
+      tags: [LogisticsTax]
+      operationId: listLegalEntities
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Criar entidade legal anonimizada
+      tags: [LogisticsTax]
+      operationId: createLegalEntity
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/establishments:
+    get:
+      summary: Listar estabelecimentos logísticos
+      tags: [LogisticsTax]
+      operationId: listEstablishments
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Criar estabelecimento logístico
+      tags: [LogisticsTax]
+      operationId: createEstablishment
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/logistics-lanes:
+    get:
+      summary: Listar rotas e fluxos logísticos
+      tags: [LogisticsTax]
+      operationId: listLogisticsLanes
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Criar rota logística multimodal
+      tags: [LogisticsTax]
+      operationId: createLogisticsLane
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/customs-regimes:
+    get:
+      summary: Listar regimes aduaneiros e zonas especiais
+      tags: [LogisticsTax]
+      operationId: listCustomsRegimes
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Criar regime aduaneiro sujeito a validação local
+      tags: [LogisticsTax]
+      operationId: createCustomsRegime
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/tax-rules:
+    get:
+      summary: Listar regras tributárias por operação
+      tags: [LogisticsTax]
+      operationId: listTaxRules
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Criar regra tributária com fonte e status jurídico
+      tags: [LogisticsTax]
+      operationId: createTaxRule
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/tax-documents:
+    get:
+      summary: Listar documentos fiscais, de transporte e aduaneiros
+      tags: [LogisticsTax]
+      operationId: listTaxDocuments
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Registrar metadados de documento tributário-logístico
+      tags: [LogisticsTax]
+      operationId: createTaxDocument
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/tax-recovery-opportunities:
+    get:
+      summary: Listar oportunidades de recuperação de tributos
+      tags: [LogisticsTax]
+      operationId: listTaxRecoveryOpportunities
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Criar oportunidade e classificar risco prescricional
+      tags: [LogisticsTax]
+      operationId: createTaxRecoveryOpportunity
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/permanent-establishment-assessments:
+    get:
+      summary: Listar avaliações preliminares de estabelecimento permanente
+      tags: [LogisticsTax]
+      operationId: listPermanentEstablishmentAssessments
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Criar indicador preliminar de estabelecimento permanente
+      tags: [LogisticsTax]
+      operationId: createPermanentEstablishmentAssessment
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/integration-connections:
+    get:
+      summary: Listar conexões com ERP, TMS, WMS e fontes externas
+      tags: [LogisticsTax]
+      operationId: listIntegrationConnections
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Configurar conexão por referência segura de segredo
+      tags: [LogisticsTax]
+      operationId: createIntegrationConnection
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/governance/cfo-configurations:
+    get:
+      summary: Listar configurações executivas do CFO
+      tags: [Governance]
+      operationId: listCfoConfigurations
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Registrar parâmetros, materialidade, apetite e pesos por país
+      tags: [Governance]
+      operationId: createCfoConfiguration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateCfoConfiguration" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/governance/cfo-configurations/latest:
+    get:
+      summary: Consultar a configuração executiva mais recente
+      tags: [Governance]
+      operationId: getLatestCfoConfiguration
+      responses:
+        "200":
+          description: Configuração mais recente ou nulo
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/DomainRecord"
+                  - type: "null"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/governance/tax-offices:
+    get:
+      summary: Listar escritórios tributários da rede regional
+      tags: [Governance]
+      operationId: listTaxOffices
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Registrar escritório, escopo, contrato, SLA e protocolo jurídico
+      tags: [Governance]
+      operationId: createTaxOffice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateTaxOffice" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/governance/tax-offices/summary:
+    get:
+      summary: Consolidar cobertura, honorários e lacunas da rede
+      tags: [Governance]
+      operationId: getTaxOfficeNetworkSummary
+      responses:
+        "200":
+          description: Resumo gerencial da rede do tenant
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/demo/seed:
+    post:
+      summary: Criar o cenário sintético regional de demonstração
+      description: >-
+        Operação idempotente por tenant. Cria uma configuração CFO em baseline,
+        oito escritórios e indicadores sintéticos para 2026-Q3. Não usa dados reais.
+      tags: [Demo]
+      operationId: seedSyntheticRegionalDemo
+      responses:
+        "201":
+          description: Cenário criado ou já existente
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/jurisdictions/country-groups:
+    get:
+      summary: Consultar o catálogo de países por bloco gerencial
+      tags: [Jurisdictions]
+      operationId: listCountryGroups
+      description: >-
+        Retorna a relação documental anonimizada. Presença operacional permanece não confirmada;
+        o bloco de Ilhas do Caribe depende da decisão D-01.
+      responses:
+        "200":
+          description: Catálogo documental agrupado
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [companyDisplayName, operationalPresenceConfirmed, data]
+                properties:
+                  companyDisplayName:
+                    { type: string, const: Empresa Confidencial }
+                  operationalPresenceConfirmed: { type: boolean, const: false }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/CountryGroup" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/jurisdictions:
+    get:
+      summary: Listar jurisdições visíveis
+      tags: [Jurisdictions]
+      operationId: listJurisdictions
+      responses:
+        "200":
+          description: Jurisdições visíveis para o tenant e escopos do ator
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Jurisdiction"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      summary: Criar uma jurisdição
+      tags: [Jurisdictions]
+      operationId: createJurisdiction
+      description: Requer função tax-admin ou country-manager.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJurisdiction"
+      responses:
+        "201":
+          description: Jurisdição criada e auditada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Jurisdiction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/jurisdictions/{id}:
+    patch:
+      summary: Atualizar uma jurisdição
+      tags: [Jurisdictions]
+      operationId: updateJurisdiction
+      description: Requer função tax-admin ou country-manager.
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateJurisdiction"
+      responses:
+        "200":
+          description: Jurisdição atualizada e auditada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Jurisdiction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/audit-events:
+    get:
+      summary: Listar e verificar eventos de auditoria
+      tags: [Audit]
+      operationId: listAuditEvents
+      description: Requer função tax-admin ou auditor.
+      responses:
+        "200":
+          description: Eventos do tenant e resultado da verificação da cadeia
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, integrityValid]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AuditEvent"
+                  integrityValid:
+                    type: boolean
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Em produção, token do provedor corporativo. Cabeçalhos sintéticos existem apenas localmente.
+  headers:
+    CorrelationId:
+      description: Identificador da requisição aceito ou gerado pelo serviço
+      schema:
+        type: string
+        maxLength: 128
+  parameters:
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBodies:
+    DomainRecord:
+      required: true
+      description: >-
+        Payload específico do domínio, validado estritamente pela API. Campos legais devem
+        incluir fonte e status de validação quando aplicável.
+      content:
+        application/json:
+          schema:
+            type: object
+            minProperties: 1
+            additionalProperties: true
+  responses:
+    DomainRecordList:
+      description: Registros visíveis no tenant e nos escopos de país do ator
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: array
+                items: { $ref: "#/components/schemas/DomainRecord" }
+    DomainRecordCreated:
+      description: Registro criado e evento de auditoria encadeado
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/DomainRecord" }
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Unauthorized:
+      description: Identidade ausente ou inválida
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Forbidden:
+      description: Identidade válida sem permissão efetiva
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotFound:
+      description: Recurso inexistente ou não visível no tenant
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Conflict:
+      description: Conflito com o estado atual
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+  schemas:
+    CreateCfoConfiguration:
+      type: object
+      additionalProperties: false
+      required:
+        - version
+        - effectiveFrom
+        - baselineDate
+        - reportingCurrency
+        - complementaryCurrency
+        - materialityAbsoluteEur
+        - materialityEbitdaPercent
+        - riskSuccessProbabilityThresholdPercent
+        - maxUnprovisionedExposureEur
+        - simpleSlaHours
+        - complexSlaHours
+        - countryMaterialityWeights
+        - approvalStatus
+      properties:
+        version: { type: string, minLength: 2, maxLength: 40 }
+        effectiveFrom: { type: string, format: date }
+        baselineDate: { type: string, format: date }
+        reportingCurrency: { type: string, pattern: "^[A-Z]{3}$" }
+        complementaryCurrency: { type: string, pattern: "^[A-Z]{3}$" }
+        materialityAbsoluteEur: { type: number, minimum: 0 }
+        materialityEbitdaPercent: { type: number, minimum: 0, maximum: 100 }
+        riskSuccessProbabilityThresholdPercent:
+          { type: number, minimum: 0, maximum: 100 }
+        maxUnprovisionedExposureEur: { type: number, minimum: 0 }
+        simpleSlaHours: { type: number, minimum: 1 }
+        complexSlaHours: { type: number, minimum: 1 }
+        countryMaterialityWeights:
+          type: object
+          minProperties: 1
+          propertyNames: { pattern: "^[A-Z]{2}$" }
+          additionalProperties: { type: number, minimum: 0 }
+          description: Os pesos por código ISO alpha-2 devem totalizar 100.
+        approvalStatus:
+          type: string
+          enum: [DRAFT, CFO_APPROVED, BOARD_APPROVED]
+        approvedBy:
+          type: string
+          minLength: 2
+          maxLength: 160
+          description: Obrigatório quando approvalStatus não for DRAFT.
+    CreateTaxOffice:
+      type: object
+      additionalProperties: false
+      required:
+        - officeCode
+        - anonymizedName
+        - countryCode
+        - tier
+        - legalTradition
+        - scope
+        - contractStatus
+        - hubRole
+        - feeModel
+        - annualFeesEur
+        - simpleSlaHours
+        - complexSlaHours
+        - powerOfAttorneyStatus
+        - scorecardCadence
+        - privilegeProtocol
+        - legalValidationStatus
+      properties:
+        officeCode: { type: string, minLength: 2, maxLength: 40 }
+        anonymizedName: { type: string, minLength: 2, maxLength: 160 }
+        countryCode: { type: string, pattern: "^[A-Z]{2}$" }
+        tier:
+          type: string
+          enum: [TIER_1, TIER_2, TIER_3, TIER_4, TIER_5]
+        legalTradition:
+          type: string
+          enum: [CIVIL_LAW, COMMON_LAW, MIXED, OTHER]
+        scope:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum: [COMPLIANCE, LITIGATION, ADVISORY, CUSTOMS, INTERNATIONAL_TAX]
+        contractStatus:
+          type: string
+          enum: [ACTIVE, GAP, PLANNED, UNDER_REVIEW]
+        hubRole: { type: string, enum: [NONE, COUNTRY_HUB, REGIONAL_HUB] }
+        parentHubCode: { type: string, minLength: 2, maxLength: 40 }
+        feeModel: { type: string, enum: [FIXED, HOURLY, SUCCESS_FEE, HYBRID] }
+        annualFeesEur: { type: number, minimum: 0 }
+        simpleSlaHours: { type: number, minimum: 1 }
+        complexSlaHours: { type: number, minimum: 1 }
+        powerOfAttorneyStatus:
+          type: string
+          enum: [CONFIRMED, PENDING, NOT_REQUIRED, EXPIRED]
+        scorecardCadence: { type: string, enum: [QUARTERLY, SEMIANNUAL] }
+        privilegeProtocol:
+          type: string
+          enum: [DOCUMENTED, PENDING_REVIEW, NOT_APPLICABLE]
+        legalValidationStatus:
+          type: string
+          enum: [PRELIMINARY, PENDING_LOCAL_COUNSEL, VALIDATED]
+    DomainRecord:
+      type: object
+      required: [id, tenantId, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        tenantId: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        legalValidationStatus:
+          type: string
+          enum: [PRELIMINARY, PENDING_LOCAL_COUNSEL, VALIDATED, SUPERSEDED]
+      additionalProperties: true
+    Health:
+      type: object
+      required: [status, service, version, time]
+      properties:
+        status: { type: string, const: ok }
+        service: { type: string, const: api-management-tax }
+        version: { type: string }
+        time: { type: string, format: date-time }
+    IdentityContext:
+      type: object
+      required:
+        [
+          companyDisplayName,
+          subject,
+          tenantId,
+          roles,
+          countryScopes,
+          authenticationMode,
+        ]
+      properties:
+        companyDisplayName: { type: string }
+        subject: { type: string }
+        tenantId: { type: string }
+        roles:
+          type: array
+          items: { type: string }
+        countryScopes:
+          type: array
+          items: { type: string, pattern: "^[A-Z]{2}$" }
+        authenticationMode: { type: string, enum: [synthetic, oidc] }
+    CreateJurisdiction:
+      type: object
+      additionalProperties: false
+      required: [countryCode, name, managementBlock, jurisdictionType]
+      properties:
+        countryCode: { type: string, pattern: "^[A-Za-z]{2}$", examples: [BR] }
+        name: { type: string, minLength: 2, maxLength: 120, examples: [Brasil] }
+        managementBlock:
+          type: string
+          enum: [CENTRAL_AMERICA, CARIBBEAN_ISLANDS, SOUTH_AMERICA]
+        jurisdictionType:
+          type: string
+          enum:
+            [
+              SOVEREIGN_STATE,
+              NON_SOVEREIGN_TERRITORY,
+              CONSTITUENT_COUNTRY,
+              OVERSEAS_TERRITORY,
+              OVERSEAS_REGION,
+            ]
+        sovereignAuthorityCode:
+          type: string
+          pattern: "^[A-Za-z]{2}$"
+          description: Obrigatório para jurisdições não soberanas e proibido para SOVEREIGN_STATE.
+    SovereignAuthority:
+      type: object
+      additionalProperties: false
+      required: [countryCode, name]
+      properties:
+        countryCode: { type: string, pattern: "^[A-Z]{2}$" }
+        name: { type: string }
+    JurisdictionCatalogItem:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          countryCode,
+          name,
+          jurisdictionType,
+          sovereignAuthority,
+          applicableLawModel,
+          legalValidationStatus,
+          tierReference,
+          documentaryBasis,
+          operationalPresence,
+        ]
+      properties:
+        countryCode: { type: string, pattern: "^[A-Z]{2}$" }
+        name: { type: string }
+        jurisdictionType:
+          type: string
+          enum:
+            [
+              SOVEREIGN_STATE,
+              NON_SOVEREIGN_TERRITORY,
+              CONSTITUENT_COUNTRY,
+              OVERSEAS_TERRITORY,
+              OVERSEAS_REGION,
+            ]
+        sovereignAuthority:
+          oneOf:
+            - $ref: "#/components/schemas/SovereignAuthority"
+            - type: "null"
+        applicableLawModel:
+          type: string
+          enum:
+            [
+              SOVEREIGN_DOMESTIC_LAW,
+              TERRITORY_SPECIFIC_WITH_SOVEREIGN_FRAMEWORK,
+            ]
+        legalValidationStatus: { type: string, const: REQUIRED_LOCAL_COUNSEL }
+        legalFrameworkNote: { type: string }
+        tierReference:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 5
+          description: Nulo quando o país consta apenas do catálogo regional e ainda não possui tier documental.
+        documentaryBasis:
+          type: string
+          enum: [EXPLICITLY_NAMED, AGGREGATE_REFERENCE, REGIONAL_CATALOG]
+        operationalPresence: { type: string, const: UNCONFIRMED }
+    CountryGroup:
+      type: object
+      additionalProperties: false
+      required: [code, name, coverageStatus, countries, territories]
+      properties:
+        code:
+          type: string
+          enum: [CENTRAL_AMERICA, CARIBBEAN_ISLANDS, SOUTH_AMERICA]
+        name: { type: string }
+        coverageStatus:
+          type: string
+          enum: [DOCUMENTED_REFERENCE, PENDING_CONFIRMATION]
+        classificationNote: { type: string }
+        countries:
+          type: array
+          items: { $ref: "#/components/schemas/JurisdictionCatalogItem" }
+        territories:
+          type: array
+          items: { $ref: "#/components/schemas/JurisdictionCatalogItem" }
+    UpdateJurisdiction:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        status: { type: string, enum: [active, inactive] }
+    Jurisdiction:
+      allOf:
+        - $ref: "#/components/schemas/CreateJurisdiction"
+        - type: object
+          required:
+            [
+              id,
+              tenantId,
+              applicableLawModel,
+              legalValidationStatus,
+              status,
+              createdAt,
+              updatedAt,
+            ]
+          properties:
+            id: { type: string, format: uuid }
+            tenantId: { type: string }
+            applicableLawModel:
+              type: string
+              enum:
+                [
+                  SOVEREIGN_DOMESTIC_LAW,
+                  TERRITORY_SPECIFIC_WITH_SOVEREIGN_FRAMEWORK,
+                ]
+            legalValidationStatus:
+              { type: string, const: REQUIRED_LOCAL_COUNSEL }
+            status: { type: string, enum: [active, inactive] }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+    AuditEvent:
+      type: object
+      required:
+        [
+          id,
+          tenantId,
+          occurredAt,
+          actorSubject,
+          action,
+          resourceType,
+          resourceId,
+          correlationId,
+          metadata,
+          mac,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        tenantId: { type: string }
+        occurredAt: { type: string, format: date-time }
+        actorSubject: { type: string }
+        action: { type: string }
+        resourceType: { type: string }
+        resourceId: { type: string }
+        correlationId: { type: string }
+        metadata: { type: object, additionalProperties: true }
+        previousMac: { type: [string, "null"] }
+        mac: { type: string, pattern: "^[a-f0-9]{64}$" }
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance, correlationId]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string }
+        instance: { type: string }
+        correlationId: { type: string }
+security:
+  - bearerAuth: []

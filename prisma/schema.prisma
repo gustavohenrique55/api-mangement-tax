@@ -1,0 +1,336 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Tenant {
+  id                                String                             @id @default(uuid()) @db.Uuid
+  displayName                       String                             @map("display_name") @db.VarChar(160)
+  createdAt                         DateTime                           @default(now()) @map("created_at") @db.Timestamptz(6)
+  jurisdictions                     Jurisdiction[]
+  auditEvents                       AuditEvent[]
+  operationalProfiles               OperationalProfile[]
+  legalEntities                     LegalEntity[]
+  establishments                    Establishment[]
+  logisticsLanes                    LogisticsLane[]
+  customsRegimes                    CustomsRegime[]
+  taxRules                          TaxRule[]
+  taxDocuments                      TaxDocument[]
+  taxRecoveryOpportunities          TaxRecoveryOpportunity[]
+  permanentEstablishmentAssessments PermanentEstablishmentAssessment[]
+  integrationConnections            IntegrationConnection[]
+  officeScorecards                  OfficeScorecard[]
+  etrMeasurements                   EtrMeasurement[]
+  taxDemands                        TaxDemand[]
+  taxContingencies                  TaxContingency[]
+  managementRecords                 ManagementRecord[]
+
+  @@map("tenants")
+}
+
+model Jurisdiction {
+  id                     String   @id @default(uuid()) @db.Uuid
+  tenantId               String   @map("tenant_id") @db.Uuid
+  countryCode            String   @map("country_code") @db.Char(2)
+  name                   String   @db.VarChar(120)
+  managementBlock        String   @map("management_block") @db.VarChar(24)
+  jurisdictionType       String   @map("jurisdiction_type") @db.VarChar(32)
+  sovereignAuthorityCode String?  @map("sovereign_authority_code") @db.Char(2)
+  applicableLawModel     String   @map("applicable_law_model") @db.VarChar(64)
+  legalValidationStatus  String   @map("legal_validation_status") @db.VarChar(40)
+  status                 String   @default("active") @db.VarChar(16)
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, countryCode])
+  @@index([tenantId, status])
+  @@map("jurisdictions")
+}
+
+model AuditEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  occurredAt    DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  actorSubject  String   @map("actor_subject") @db.VarChar(200)
+  action        String   @db.VarChar(100)
+  resourceType  String   @map("resource_type") @db.VarChar(100)
+  resourceId    String   @map("resource_id") @db.VarChar(200)
+  correlationId String   @map("correlation_id") @db.VarChar(128)
+  metadata      Json
+  previousMac   String?  @map("previous_mac") @db.Char(64)
+  mac           String   @db.Char(64)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, occurredAt])
+  @@map("audit_events")
+}
+
+model OperationalProfile {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  countryCode         String   @map("country_code") @db.Char(2)
+  operationTypes      Json     @map("operation_types")
+  transportModes      Json     @map("transport_modes")
+  operatingModel      String   @map("operating_model") @db.VarChar(24)
+  operationalPresence String   @map("operational_presence") @db.VarChar(24)
+  notes               String?  @db.VarChar(1000)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("operational_profiles")
+}
+
+model LegalEntity {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  countryCode         String   @map("country_code") @db.Char(2)
+  displayName         String   @map("display_name") @db.VarChar(160)
+  taxIdentifierMasked String   @map("tax_identifier_masked") @db.VarChar(64)
+  entityType          String   @map("entity_type") @db.VarChar(40)
+  functionalCurrency  String   @map("functional_currency") @db.Char(3)
+  status              String   @db.VarChar(20)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("legal_entities")
+}
+
+model Establishment {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  legalEntityId     String   @map("legal_entity_id") @db.Uuid
+  countryCode       String   @map("country_code") @db.Char(2)
+  displayName       String   @map("display_name") @db.VarChar(160)
+  establishmentType String   @map("establishment_type") @db.VarChar(32)
+  city              String   @db.VarChar(160)
+  controlModel      String   @map("control_model") @db.VarChar(24)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("establishments")
+}
+
+model LogisticsLane {
+  id                     String   @id @default(uuid()) @db.Uuid
+  tenantId               String   @map("tenant_id") @db.Uuid
+  originCountryCode      String   @map("origin_country_code") @db.Char(2)
+  destinationCountryCode String   @map("destination_country_code") @db.Char(2)
+  transportMode          String   @map("transport_mode") @db.VarChar(24)
+  billingEntityId        String?  @map("billing_entity_id") @db.Uuid
+  incoterm               String?  @db.VarChar(16)
+  currency               String   @db.Char(3)
+  status                 String   @db.VarChar(20)
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("logistics_lanes")
+}
+
+model CustomsRegime {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  countryCode           String   @map("country_code") @db.Char(2)
+  code                  String   @db.VarChar(40)
+  name                  String   @db.VarChar(160)
+  regimeType            String   @map("regime_type") @db.VarChar(40)
+  legalValidationStatus String   @map("legal_validation_status") @db.VarChar(40)
+  sourceReference       String?  @map("source_reference") @db.VarChar(500)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("customs_regimes")
+}
+
+model TaxRule {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  countryCode           String   @map("country_code") @db.Char(2)
+  taxType               String   @map("tax_type") @db.VarChar(40)
+  operationType         String   @map("operation_type") @db.VarChar(48)
+  ratePercent           Decimal? @map("rate_percent") @db.Decimal(12, 6)
+  applicabilitySummary  String   @map("applicability_summary") @db.VarChar(500)
+  legalValidationStatus String   @map("legal_validation_status") @db.VarChar(40)
+  sourceReference       String   @map("source_reference") @db.VarChar(500)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("tax_rules")
+}
+
+model TaxDocument {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  countryCode       String   @map("country_code") @db.Char(2)
+  documentType      String   @map("document_type") @db.VarChar(40)
+  externalReference String   @map("external_reference") @db.VarChar(160)
+  issueDate         DateTime @map("issue_date") @db.Date
+  legalEntityId     String?  @map("legal_entity_id") @db.Uuid
+  informationClass  String   @map("information_class") @db.VarChar(24)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("tax_documents")
+}
+
+model TaxRecoveryOpportunity {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  countryCode           String   @map("country_code") @db.Char(2)
+  legalEntityId         String?  @map("legal_entity_id") @db.Uuid
+  creditCategory        String   @map("credit_category") @db.VarChar(24)
+  taxType               String   @map("tax_type") @db.VarChar(40)
+  taxPeriod             String   @map("tax_period") @db.VarChar(40)
+  identifiedAmount      Decimal  @map("identified_amount") @db.Decimal(20, 4)
+  currency              String   @db.Char(3)
+  statutoryDeadline     DateTime @map("statutory_deadline") @db.Date
+  recoveryChannel       String   @map("recovery_channel") @db.VarChar(40)
+  status                String   @db.VarChar(32)
+  legalValidationStatus String   @map("legal_validation_status") @db.VarChar(40)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("tax_recovery_opportunities")
+}
+
+model PermanentEstablishmentAssessment {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  hostCountryCode       String   @map("host_country_code") @db.Char(2)
+  legalEntityId         String?  @map("legal_entity_id") @db.Uuid
+  riskFactors           Json     @map("risk_factors")
+  riskLevel             String   @map("risk_level") @db.VarChar(16)
+  legalValidationStatus String   @map("legal_validation_status") @db.VarChar(40)
+  preliminaryRationale  String   @map("preliminary_rationale") @db.VarChar(1000)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("permanent_establishment_assessments")
+}
+
+model IntegrationConnection {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  systemType      String   @map("system_type") @db.VarChar(32)
+  displayName     String   @map("display_name") @db.VarChar(120)
+  direction       String   @db.VarChar(24)
+  status          String   @db.VarChar(20)
+  secretReference String   @map("secret_reference") @db.VarChar(160)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("integration_connections")
+}
+
+model OfficeScorecard {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  officeName        String   @map("office_name") @db.VarChar(160)
+  countryCode       String   @map("country_code") @db.Char(2)
+  tier              String   @db.VarChar(16)
+  period            String   @db.VarChar(7)
+  calibrationStatus String   @map("calibration_status") @db.VarChar(24)
+  inputData         Json     @map("input_data")
+  calculatedData    Json     @map("calculated_data")
+  ide               Decimal  @db.Decimal(5, 2)
+  classification    String   @db.VarChar(24)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, period])
+  @@map("office_scorecards")
+}
+
+model EtrMeasurement {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  countryCode      String   @map("country_code") @db.Char(2)
+  tier             String   @db.VarChar(16)
+  period           String   @db.VarChar(7)
+  sourceCurrency   String   @map("source_currency") @db.Char(3)
+  inputData        Json     @map("input_data")
+  calculatedData   Json     @map("calculated_data")
+  effectiveTaxRate Decimal  @map("effective_tax_rate") @db.Decimal(9, 4)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, period])
+  @@map("etr_measurements")
+}
+
+model TaxDemand {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  countryCode   String    @map("country_code") @db.Char(2)
+  tier          String    @db.VarChar(16)
+  complexity    String    @db.VarChar(16)
+  status        String    @db.VarChar(24)
+  receivedAt    DateTime  @map("received_at") @db.Timestamptz(6)
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz(6)
+  indicatorData Json      @map("indicator_data")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status])
+  @@map("tax_demands")
+}
+
+model TaxContingency {
+  id                      String    @id @default(uuid()) @db.Uuid
+  tenantId                String    @map("tenant_id") @db.Uuid
+  countryCode             String    @map("country_code") @db.Char(2)
+  tier                    String    @db.VarChar(16)
+  riskCategory            String    @map("risk_category") @db.VarChar(48)
+  status                  String    @db.VarChar(16)
+  exposureAmountEur       Decimal   @map("exposure_amount_eur") @db.Decimal(20, 4)
+  openedAt                DateTime  @map("opened_at") @db.Date
+  closedAt                DateTime? @map("closed_at") @db.Date
+  inheritedBeforeBaseline Boolean   @map("inherited_before_baseline")
+  outsideRiskAppetite     Boolean   @map("outside_risk_appetite")
+  riskJustification       String?   @map("risk_justification") @db.VarChar(1000)
+  agingDays               Int       @map("aging_days")
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant                  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status])
+  @@map("tax_contingencies")
+}
+
+model ManagementRecord {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  resourceType String   @map("resource_type") @db.VarChar(80)
+  countryCodes Json     @map("country_codes")
+  payload      Json
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, resourceType])
+  @@map("management_records")
+}

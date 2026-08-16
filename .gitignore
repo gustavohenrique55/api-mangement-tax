@@ -1,0 +1,18 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+.pnpm-store/
+src/generated/prisma/
+*.log
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+prisma/*.db
+prisma/*.db-journal
+
+# Sub-projeto com repositório git próprio
+/dashboard/

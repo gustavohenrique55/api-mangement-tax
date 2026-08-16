@@ -1,0 +1,183 @@
+{"kind":"deck","id":"pr/tlcmvy","name":"Deck"}
+{"kind":"layout","layoutId":"fee42325-b6dc-4996-b821-2a919252c10b","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"ffcd630e-80af-4fee-b544-bbead5394f24","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/olm358","slide":1,"title":"Proposta para discussão com especialista tributário regional","textShapes":2}
+{"kind":"shape","id":"sh/vaxgnqxk","slide":1,"bbox":[0,650,1280,70]}
+{"kind":"textbox","id":"sh/u9ozelgz","slide":1,"text":"Proposta para discussão com especialista tributário regional","textPreview":"Proposta para discussão com especialista tributário regional","textChars":60,"textLines":1,"bbox":[70,671,900,28]}
+{"kind":"textbox","id":"sh/5gzit0fm","slide":1,"text":"2026 Q3","textPreview":"2026 Q3","textChars":7,"textLines":1,"bbox":[1110,671,100,28]}
+{"kind":"image","id":"im/h8be1srq","slide":1,"name":"","alt":"Capa do dashboard Management Tax LATAM e Caribe","bbox":[0,0,1280,720]}
+{"kind":"notes","id":"nt/olm358","slide":1,"text":""}
+{"kind":"slide","id":"sl/m4z7ag","slide":2,"title":"O MANDATO","textShapes":14}
+{"kind":"textbox","id":"sh/gzm5w7yx","slide":2,"text":"O MANDATO","textPreview":"O MANDATO","textChars":9,"textLines":1,"bbox":[70,42,500,24]}
+{"kind":"textbox","id":"sh/vyd432hc","slide":2,"text":"Governar resultado regional sem substituir o especialista local","textPreview":"Governar resultado regional sem substituir o especialista local","textChars":63,"textLines":1,"bbox":[70,78,1140,70]}
+{"kind":"textbox","id":"sh/ux4nuxgr","slide":2,"text":"O Management Tax consolida decisões, risco e desempenho. A execução técnica permanece com escritórios habilitados em cada jurisdição.","textPreview":"O Management Tax consolida decisões, risco e desempenho. A execução técnica permanece com escritórios habilitados em cada jurisdição.","textChars":133,"textLines":1,"bbox":[70,158,1080,60]}
+{"kind":"textbox","id":"sh/twvm1szm","slide":2,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[72,270,50,34]}
+{"kind":"textbox","id":"sh/8b25sni1","slide":2,"text":"Reduzir a carga efetiva","textPreview":"Reduzir a carga efetiva","textChars":23,"textLines":1,"bbox":[140,270,330,36]}
+{"kind":"textbox","id":"sh/7at4zihg","slide":2,"text":"ETR, incentivos e créditos com efeito de caixa verificável.","textPreview":"ETR, incentivos e créditos com efeito de caixa verificável.","textChars":59,"textLines":1,"bbox":[500,270,650,52]}
+{"kind":"shape","id":"sh/69knqd0v","slide":2,"bbox":[70,345,1140,1]}
+{"kind":"textbox","id":"sh/l8bmx8za","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[72,382,50,34]}
+{"kind":"textbox","id":"sh/k72lonip","slide":2,"text":"Controlar exposição","textPreview":"Controlar exposição","textChars":19,"textLines":1,"bbox":[140,382,330,36]}
+{"kind":"textbox","id":"sh/6987ep47","slide":2,"text":"Materialidade, apetite de risco, contingências e gates ex ante.","textPreview":"Materialidade, apetite de risco, contingências e gates ex ante.","textChars":63,"textLines":1,"bbox":[500,382,650,52]}
+{"kind":"shape","id":"sh/7ah8nu5c","slide":2,"bbox":[70,457,1140,1]}
+{"kind":"textbox","id":"sh/sbqpgzmx","slide":2,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[72,494,50,34]}
+{"kind":"textbox","id":"sh/tcjqp4ni","slide":2,"text":"Padronizar a rede","textPreview":"Padronizar a rede","textChars":17,"textLines":1,"bbox":[140,494,330,36]}
+{"kind":"textbox","id":"sh/y587ap4v","slide":2,"text":"IDE, SLA, reliance e atualização legislativa em 30+ jurisdições.","textPreview":"IDE, SLA, reliance e atualização legislativa em 30+ jurisdições.","textChars":64,"textLines":1,"bbox":[500,494,650,52]}
+{"kind":"shape","id":"sh/j6hoju5g","slide":2,"bbox":[70,569,1140,1]}
+{"kind":"textbox","id":"sh/k7qpczm1","slide":2,"text":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textPreview":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textChars":39,"textLines":1,"bbox":[70,681,600,18]}
+{"kind":"textbox","id":"sh/l8zqlknm","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1160,681,50,18]}
+{"kind":"notes","id":"nt/m4z7ag","slide":2,"text":""}
+{"kind":"slide","id":"sl/7nm84c","slide":3,"title":"ARQUITETURA DE COBERTURA","textShapes":19}
+{"kind":"textbox","id":"sh/50ne9kr6","slide":3,"text":"ARQUITETURA DE COBERTURA","textPreview":"ARQUITETURA DE COBERTURA","textChars":24,"textLines":1,"bbox":[70,42,500,24]}
+{"kind":"textbox","id":"sh/ixcvepsv","slide":3,"text":"A intensidade de supervisão acompanha materialidade e risco","textPreview":"A intensidade de supervisão acompanha materialidade e risco","textChars":59,"textLines":1,"bbox":[70,78,1140,70]}
+{"kind":"textbox","id":"sh/jy5w7a9g","slide":3,"text":"TIER 1","textPreview":"TIER 1","textChars":6,"textLines":1,"bbox":[74,175,120,30]}
+{"kind":"textbox","id":"sh/wvudcfap","slide":3,"text":"Brasil · México · Colômbia","textPreview":"Brasil · México · Colômbia","textChars":26,"textLines":1,"bbox":[215,175,345,34]}
+{"kind":"textbox","id":"sh/xw3e5kra","slide":3,"text":"Supervisão próxima e scorecard trimestral","textPreview":"Supervisão próxima e scorecard trimestral","textChars":41,"textLines":1,"bbox":[590,175,570,42]}
+{"kind":"shape","id":"sh/a9cva5sj","slide":3,"bbox":[70,229,1090,5]}
+{"kind":"textbox","id":"sh/valw3a94","slide":3,"text":"TIER 2","textPreview":"TIER 2","textChars":6,"textLines":1,"bbox":[74,265,120,30]}
+{"kind":"textbox","id":"sh/87ud8vat","slide":3,"text":"Argentina · Chile · Peru · outros","textPreview":"Argentina · Chile · Peru · outros","textChars":33,"textLines":1,"bbox":[215,265,345,34]}
+{"kind":"textbox","id":"sh/983e10ry","slide":3,"text":"Reporte periódico; Argentina com atenção cambial","textPreview":"Reporte periódico; Argentina com atenção cambial","textChars":48,"textLines":1,"bbox":[590,265,570,42]}
+{"kind":"shape","id":"sh/5gj69obm","slide":3,"bbox":[70,319,1090,5]}
+{"kind":"textbox","id":"sh/4fq50ja1","slide":3,"text":"TIER 3","textPreview":"TIER 3","textChars":6,"textLines":1,"bbox":[74,355,120,30]}
+{"kind":"textbox","id":"sh/jeho7etg","slide":3,"text":"América Central","textPreview":"América Central","textChars":15,"textLines":1,"bbox":[215,355,345,34]}
+{"kind":"textbox","id":"sh/it8ny9sv","slide":3,"text":"Gestão por hub e regime regional","textPreview":"Gestão por hub e regime regional","textChars":32,"textLines":1,"bbox":[590,355,570,42]}
+{"kind":"shape","id":"sh/hsz654bq","slide":3,"bbox":[70,409,1090,5]}
+{"kind":"textbox","id":"sh/wrq5wza5","slide":3,"text":"TIER 4","textPreview":"TIER 4","textChars":6,"textLines":1,"bbox":[74,445,120,30]}
+{"kind":"textbox","id":"sh/vqho3utk","slide":3,"text":"Caribe e territórios","textPreview":"Caribe e territórios","textChars":20,"textLines":1,"bbox":[215,445,345,34]}
+{"kind":"textbox","id":"sh/ap8nupsz","slide":3,"text":"Assessoria por tradição jurídica e substância","textPreview":"Assessoria por tradição jurídica e substância","textChars":45,"textLines":1,"bbox":[590,445,570,42]}
+{"kind":"shape","id":"sh/9oz614be","slide":3,"bbox":[70,499,1090,5]}
+{"kind":"textbox","id":"sh/8n65szat","slide":3,"text":"TIER 5","textPreview":"TIER 5","textChars":6,"textLines":1,"bbox":[74,535,120,30]}
+{"kind":"textbox","id":"sh/07a58zip","slide":3,"text":"Venezuela · Cuba · Haiti","textPreview":"Venezuela · Cuba · Haiti","textChars":24,"textLines":1,"bbox":[215,535,345,34]}
+{"kind":"textbox","id":"sh/18j6h4ja","slide":3,"text":"Risco reforçado, sanções e continuidade","textPreview":"Risco reforçado, sanções e continuidade","textChars":39,"textLines":1,"bbox":[590,535,570,42]}
+{"kind":"shape","id":"sh/e5sn6p0j","slide":3,"bbox":[70,589,1090,5]}
+{"kind":"textbox","id":"sh/z61ofu14","slide":3,"text":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textPreview":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textChars":39,"textLines":1,"bbox":[70,681,600,18]}
+{"kind":"textbox","id":"sh/c3a54fit","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1160,681,50,18]}
+{"kind":"notes","id":"nt/7nm84c","slide":3,"text":""}
+{"kind":"slide","id":"sl/svfl8a","slide":4,"title":"VISÃO EXECUTIVA SINTÉTICA","textShapes":21}
+{"kind":"textbox","id":"sh/udob2pwz","slide":4,"text":"VISÃO EXECUTIVA SINTÉTICA","textPreview":"VISÃO EXECUTIVA SINTÉTICA","textChars":25,"textLines":1,"bbox":[70,42,500,24]}
+{"kind":"textbox","id":"sh/hgfad4fq","slide":4,"text":"O painel equilibra geração de valor e exposição","textPreview":"O painel equilibra geração de valor e exposição","textChars":47,"textLines":1,"bbox":[70,78,1140,70]}
+{"kind":"textbox","id":"sh/gf6t4ze5","slide":4,"text":"ETR","textPreview":"ETR","textChars":3,"textLines":1,"bbox":[70,165,230,24]}
+{"kind":"textbox","id":"sh/7qds7axo","slide":4,"text":"16,3%","textPreview":"16,3%","textChars":5,"textLines":1,"bbox":[70,195,240,52]}
+{"kind":"textbox","id":"sh/6p4ry5w3","slide":4,"text":"−2,1 p.p.","textPreview":"−2,1 p.p.","textChars":9,"textLines":1,"bbox":[70,249,220,24]}
+{"kind":"textbox","id":"sh/tcfa9kfe","slide":4,"text":"IDE médio","textPreview":"IDE médio","textChars":9,"textLines":1,"bbox":[360,165,230,24]}
+{"kind":"textbox","id":"sh/8b6t0fe9","slide":4,"text":"73,6","textPreview":"73,6","textChars":4,"textLines":1,"bbox":[360,195,240,52]}
+{"kind":"textbox","id":"sh/jmds3axc","slide":4,"text":"baseline","textPreview":"baseline","textChars":8,"textLines":1,"bbox":[360,249,220,24]}
+{"kind":"textbox","id":"sh/yl4ru5wr","slide":4,"text":"Créditos","textPreview":"Créditos","textChars":8,"textLines":1,"bbox":[650,165,230,24]}
+{"kind":"textbox","id":"sh/g7y94zyt","slide":4,"text":"€ 669 mil","textPreview":"€ 669 mil","textChars":9,"textLines":1,"bbox":[650,195,240,52]}
+{"kind":"textbox","id":"sh/187ad4ze","slide":4,"text":"83,6% meta","textPreview":"83,6% meta","textChars":10,"textLines":1,"bbox":[650,249,220,24]}
+{"kind":"textbox","id":"sh/e5wr2pgn","slide":4,"text":"Exposição","textPreview":"Exposição","textChars":9,"textLines":1,"bbox":[940,165,230,24]}
+{"kind":"textbox","id":"sh/f658buh8","slide":4,"text":"€ 2,2 mi","textPreview":"€ 2,2 mi","textChars":8,"textLines":1,"bbox":[940,195,240,52]}
+{"kind":"textbox","id":"sh/s3e90fyx","slide":4,"text":"2 exceções","textPreview":"2 exceções","textChars":10,"textLines":1,"bbox":[940,249,220,24]}
+{"kind":"shape","id":"sh/61wrypgr","slide":4,"bbox":[875,330,335,270]}
+{"kind":"textbox","id":"sh/r2587uhc","slide":4,"text":"LEITURA PARA DECISÃO","textPreview":"LEITURA PARA DECISÃO","textChars":20,"textLines":1,"bbox":[905,360,270,24]}
+{"kind":"textbox","id":"sh/czi9cjy1","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[905,408,70,55]}
+{"kind":"textbox","id":"sh/x0ralozm","slide":4,"text":"escritórios em Atenção","textPreview":"escritórios em Atenção","textChars":22,"textLines":1,"bbox":[975,419,200,42]}
+{"kind":"textbox","id":"sh/l43i9k3e","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[905,486,70,55]}
+{"kind":"textbox","id":"sh/k3uhgfmt","slide":4,"text":"escritório Crítico","textPreview":"escritório Crítico","textChars":18,"textLines":1,"bbox":[975,497,200,42]}
+{"kind":"textbox","id":"sh/zil07a58","slide":4,"text":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textPreview":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textChars":39,"textLines":1,"bbox":[70,681,600,18]}
+{"kind":"textbox","id":"sh/yhcze543","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1160,681,50,18]}
+{"kind":"chart","id":"ch/xcnqhgnu","slide":4,"name":"","chartType":"bar","bbox":[70,330,760,270]}
+{"kind":"notes","id":"nt/svfl8a","slide":4,"text":""}
+{"kind":"slide","id":"sl/o1iqe7","slide":5,"title":"SCORECARD DOS ESCRITÓRIOS","textShapes":21}
+{"kind":"textbox","id":"sh/szq5cfu9","slide":5,"text":"SCORECARD DOS ESCRITÓRIOS","textPreview":"SCORECARD DOS ESCRITÓRIOS","textChars":25,"textLines":1,"bbox":[70,42,500,24]}
+{"kind":"textbox","id":"sh/ryho3ato","slide":5,"text":"Onze indicadores transformam desempenho em evidência comparável","textPreview":"Onze indicadores transformam desempenho em evidência comparável","textChars":63,"textLines":1,"bbox":[70,78,1140,70]}
+{"kind":"shape","id":"sh/qxona5c3","slide":5,"bbox":[70,180,265,410]}
+{"kind":"textbox","id":"sh/1oz69kbq","slide":5,"text":"Qualidade · 25%","textPreview":"Qualidade · 25%","textChars":15,"textLines":1,"bbox":[90,205,225,35]}
+{"kind":"shape","id":"sh/0nq5gfal","slide":5,"bbox":[92,276,10,10]}
+{"kind":"textbox","id":"sh/f2ho7at0","slide":5,"text":"Êxito em disputas 15%","textPreview":"Êxito em disputas 15%","textChars":21,"textLines":1,"bbox":[116,270,191,54]}
+{"kind":"shape","id":"sh/e18nepsf","slide":5,"bbox":[92,338,10,10]}
+{"kind":"textbox","id":"sh/psj6d4b2","slide":5,"text":"Retrabalho de pareceres 10%","textPreview":"Retrabalho de pareceres 10%","textChars":27,"textLines":1,"bbox":[116,332,191,54]}
+{"kind":"shape","id":"sh/orapkzah","slide":5,"bbox":[360,180,265,410]}
+{"kind":"textbox","id":"sh/al8j6hov","slide":5,"text":"Prazo · 20%","textPreview":"Prazo · 20%","textChars":11,"textLines":1,"bbox":[380,205,225,35]}
+{"kind":"shape","id":"sh/bm10zmp0","slide":5,"bbox":[382,276,10,10]}
+{"kind":"textbox","id":"sh/wna18r6l","slide":5,"text":"Resposta 10%","textPreview":"Resposta 10%","textChars":12,"textLines":1,"bbox":[406,270,191,54]}
+{"kind":"shape","id":"sh/xoji1w76","slide":5,"bbox":[382,338,10,10]}
+{"kind":"textbox","id":"sh/ypsja1or","slide":5,"text":"Prazos legais 10%","textPreview":"Prazos legais 10%","textChars":17,"textLines":1,"bbox":[406,332,191,54]}
+{"kind":"shape","id":"sh/jq1036pc","slide":5,"bbox":[650,180,265,410]}
+{"kind":"textbox","id":"sh/kra1cb6x","slide":5,"text":"Resultado · 30%","textPreview":"Resultado · 30%","textChars":15,"textLines":1,"bbox":[670,205,225,35]}
+{"kind":"shape","id":"sh/lsji5g7i","slide":5,"bbox":[672,276,10,10]}
+{"kind":"textbox","id":"sh/etozyxon","slide":5,"text":"Créditos 15%","textPreview":"Créditos 15%","textChars":12,"textLines":1,"bbox":[696,270,191,54]}
+{"kind":"shape","id":"sh/zuh0r2ps","slide":5,"bbox":[672,338,10,10]}
+{"kind":"textbox","id":"sh/3ydgzy5k","slide":5,"text":"Contingências 10%","textPreview":"Contingências 10%","textChars":17,"textLines":1,"bbox":[696,332,191,54]}
+{"kind":"shape","id":"sh/2x4fqd4f","slide":5,"bbox":[672,400,10,10]}
+{"kind":"textbox","id":"sh/p0vy18nq","slide":5,"text":"Economia 5%","textPreview":"Economia 5%","textChars":11,"textLines":1,"bbox":[696,394,191,54]}
+{"kind":"shape","id":"sh/4zmxs3m5","slide":5,"bbox":[940,180,265,410]}
+{"kind":"textbox","id":"sh/futwvy5o","slide":5,"text":"Governança · 25%","textPreview":"Governança · 25%","textChars":16,"textLines":1,"bbox":[960,205,225,35]}
+{"kind":"shape","id":"sh/u9kfmt43","slide":5,"bbox":[962,276,10,10]}
+{"kind":"textbox","id":"sh/hwvex8nu","slide":5,"text":"Custo-benefício 10%","textPreview":"Custo-benefício 10%","textChars":19,"textLines":1,"bbox":[986,270,191,54]}
+{"kind":"shape","id":"sh/gvmxo3m9","slide":5,"bbox":[962,338,10,10]}
+{"kind":"textbox","id":"sh/zqxg7i5s","slide":5,"text":"Falhas 5%","textPreview":"Falhas 5%","textChars":9,"textLines":1,"bbox":[986,332,191,54]}
+{"kind":"shape","id":"sh/epofyx4n","slide":5,"bbox":[962,400,10,10]}
+{"kind":"textbox","id":"sh/wbydsf2p","slide":5,"text":"Apetite 5%","textPreview":"Apetite 5%","textChars":10,"textLines":1,"bbox":[986,394,191,54]}
+{"kind":"shape","id":"sh/xcru1k3a","slide":5,"bbox":[962,462,10,10]}
+{"kind":"textbox","id":"sh/a9gbqpkz","slide":5,"text":"Radar legal 5%","textPreview":"Radar legal 5%","textChars":14,"textLines":1,"bbox":[986,456,191,54]}
+{"kind":"textbox","id":"sh/bapczalk","slide":5,"text":"IDE = Σ (indicador normalizado × peso)","textPreview":"IDE = Σ (indicador normalizado × peso)","textChars":38,"textLines":1,"bbox":[70,620,550,30]}
+{"kind":"textbox","id":"sh/kfidwz21","slide":5,"text":"Baseline calcula, mas não autoriza panel review.","textPreview":"Baseline calcula, mas não autoriza panel review.","textChars":48,"textLines":1,"bbox":[690,620,520,30]}
+{"kind":"textbox","id":"sh/50ru543m","slide":5,"text":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textPreview":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textChars":39,"textLines":1,"bbox":[70,681,600,18]}
+{"kind":"textbox","id":"sh/yd0vupkv","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1160,681,50,18]}
+{"kind":"notes","id":"nt/o1iqe7","slide":5,"text":""}
+{"kind":"slide","id":"sl/09zdsu","slide":6,"title":"GESTÃO DE RISCO","textShapes":17}
+{"kind":"textbox","id":"sh/9sza98r6","slide":6,"text":"GESTÃO DE RISCO","textPreview":"GESTÃO DE RISCO","textChars":15,"textLines":1,"bbox":[70,42,500,24]}
+{"kind":"textbox","id":"sh/m5oryt8f","slide":6,"text":"Quatro controles compensam a distância entre gestão e execução técnica","textPreview":"Quatro controles compensam a distância entre gestão e execução técnica","textChars":70,"textLines":1,"bbox":[70,78,1140,70]}
+{"kind":"textbox","id":"sh/76hs7y90","slide":6,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[72,175,55,28]}
+{"kind":"textbox","id":"sh/wvq94nqh","slide":6,"text":"Alçadas","textPreview":"Alçadas","textChars":7,"textLines":1,"bbox":[145,175,260,32]}
+{"kind":"textbox","id":"sh/hwzadsr2","slide":6,"text":"Decisão por materialidade e impacto reputacional.","textPreview":"Decisão por materialidade e impacto reputacional.","textChars":49,"textLines":1,"bbox":[425,175,660,48]}
+{"kind":"textbox","id":"sh/ut8r2d8b","slide":6,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[72,275,55,28]}
+{"kind":"textbox","id":"sh/vuhsbi9w","slide":6,"text":"Gate ex ante","textPreview":"Gate ex ante","textChars":12,"textLines":1,"bbox":[145,275,260,32]}
+{"kind":"textbox","id":"sh/4za98nqt","slide":6,"text":"Aprovação antes de posições relevantes.","textPreview":"Aprovação antes de posições relevantes.","textChars":39,"textLines":1,"bbox":[425,275,660,48]}
+{"kind":"textbox","id":"sh/50jahsry","slide":6,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[72,375,55,28]}
+{"kind":"textbox","id":"sh/18jqd8b2","slide":6,"text":"Segunda opinião","textPreview":"Segunda opinião","textChars":15,"textLines":1,"bbox":[145,375,260,32]}
+{"kind":"textbox","id":"sh/07a9k3ux","slide":6,"text":"Parecer independente em matéria de alto impacto.","textPreview":"Parecer independente em matéria de alto impacto.","textChars":48,"textLines":1,"bbox":[425,375,660,48]}
+{"kind":"textbox","id":"sh/z618bytc","slide":6,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[72,475,55,28]}
+{"kind":"textbox","id":"sh/e5sritcr","slide":6,"text":"Reliance","textPreview":"Reliance","textChars":8,"textLines":1,"bbox":[145,475,260,32]}
+{"kind":"textbox","id":"sh/9wjqhsbe","slide":6,"text":"Questão, parecer, responsável e data documentados.","textPreview":"Questão, parecer, responsável e data documentados.","textChars":50,"textLines":1,"bbox":[425,475,660,48]}
+{"kind":"shape","id":"sh/ova9onut","slide":6,"bbox":[70,595,1140,55]}
+{"kind":"textbox","id":"sh/nu18fit8","slide":6,"text":"Escalar imediatamente: materialidade excedida · risco reputacional · sanções · posição fora do apetite","textPreview":"Escalar imediatamente: materialidade excedida · risco reputacional · sanções · posição fora do apetite","textChars":102,"textLines":1,"bbox":[95,612,1090,28]}
+{"kind":"textbox","id":"sh/m9srmdcn","slide":6,"text":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textPreview":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textChars":39,"textLines":1,"bbox":[70,681,600,18]}
+{"kind":"textbox","id":"sh/p0zq5ova","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1160,681,50,18]}
+{"kind":"notes","id":"nt/09zdsu","slide":6,"text":""}
+{"kind":"slide","id":"sl/zgl0fz","slide":7,"title":"PLANO DE IMPLANTAÇÃO","textShapes":20}
+{"kind":"textbox","id":"sh/f6xsfy98","slide":7,"text":"PLANO DE IMPLANTAÇÃO","textPreview":"PLANO DE IMPLANTAÇÃO","textChars":20,"textLines":1,"bbox":[70,42,500,24]}
+{"kind":"textbox","id":"sh/gr6to3at","slide":7,"text":"A sequência de 12 meses leva do diagnóstico à cultura regional","textPreview":"A sequência de 12 meses leva do diagnóstico à cultura regional","textChars":62,"textLines":1,"bbox":[70,78,1140,70]}
+{"kind":"shape","id":"sh/1sfah8re","slide":7,"bbox":[95,324,1050,8]}
+{"kind":"shape","id":"sh/614ritsr","slide":7,"bbox":[80,280,70,70]}
+{"kind":"textbox","id":"sh/r2dsby9c","slide":7,"text":"0","textPreview":"0","textChars":1,"textLines":1,"bbox":[80,296,70,36]}
+{"kind":"textbox","id":"sh/s3m9k3ax","slide":7,"text":"0–30 dias","textPreview":"0–30 dias","textChars":9,"textLines":1,"bbox":[55,375,120,26]}
+{"kind":"textbox","id":"sh/t4vadori","slide":7,"text":"Diagnóstico e cobertura","textPreview":"Diagnóstico e cobertura","textChars":23,"textLines":1,"bbox":[25,415,180,58]}
+{"kind":"shape","id":"sh/qx8budsv","slide":7,"bbox":[315,280,70,70]}
+{"kind":"textbox","id":"sh/byhsni9g","slide":7,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[315,296,70,36]}
+{"kind":"textbox","id":"sh/bm1c76tw","slide":7,"text":"30–90","textPreview":"30–90","textChars":5,"textLines":1,"bbox":[290,375,120,26]}
+{"kind":"textbox","id":"sh/alsbe1sb","slide":7,"text":"Governança e rede","textPreview":"Governança e rede","textChars":17,"textLines":1,"bbox":[260,415,180,58]}
+{"kind":"shape","id":"sh/xoju9gb2","slide":7,"bbox":[550,280,70,70]}
+{"kind":"textbox","id":"sh/wnatgbah","slide":7,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[550,296,70,36]}
+{"kind":"textbox","id":"sh/jq1cbq9s","slide":7,"text":"90–180","textPreview":"90–180","textChars":6,"textLines":1,"bbox":[525,375,120,26]}
+{"kind":"textbox","id":"sh/ypsbils7","slide":7,"text":"ETR e recuperação","textPreview":"ETR e recuperação","textChars":17,"textLines":1,"bbox":[495,415,180,58]}
+{"kind":"shape","id":"sh/ls3udgry","slide":7,"bbox":[785,280,70,70]}
+{"kind":"textbox","id":"sh/krutkvad","slide":7,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[785,296,70,36]}
+{"kind":"textbox","id":"sh/7elcfq94","slide":7,"text":"90–180+","textPreview":"90–180+","textChars":7,"textLines":1,"bbox":[760,375,120,26]}
+{"kind":"textbox","id":"sh/6dcbmlsj","slide":7,"text":"Risco contínuo","textPreview":"Risco contínuo","textChars":14,"textLines":1,"bbox":[730,415,180,58]}
+{"kind":"shape","id":"sh/29wfepcr","slide":7,"bbox":[1020,280,70,70]}
+{"kind":"textbox","id":"sh/3a5w7utc","slide":7,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[1020,296,70,36]}
+{"kind":"textbox","id":"sh/4byxgzux","slide":7,"text":"180–365","textPreview":"180–365","textChars":7,"textLines":1,"bbox":[995,375,120,26]}
+{"kind":"textbox","id":"sh/pc7e94b2","slide":7,"text":"Cultura e consolidação","textPreview":"Cultura e consolidação","textChars":22,"textLines":1,"bbox":[965,415,180,58]}
+{"kind":"textbox","id":"sh/ulwfapcf","slide":7,"text":"Frente paralela desde o dia 1: atendimento às demandas correntes do negócio.","textPreview":"Frente paralela desde o dia 1: atendimento às demandas correntes do negócio.","textChars":76,"textLines":1,"bbox":[170,535,940,40]}
+{"kind":"textbox","id":"sh/vm5w3ud0","slide":7,"text":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textPreview":"EMPRESA CONFIDENCIAL · DADOS SINTÉTICOS","textChars":39,"textLines":1,"bbox":[70,681,600,18]}
+{"kind":"textbox","id":"sh/g7exczul","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1160,681,50,18]}
+{"kind":"notes","id":"nt/zgl0fz","slide":7,"text":""}
+{"kind":"slide","id":"sl/6rjst7","slide":8,"title":"PRÓXIMA DECISÃO","textShapes":15}
+{"kind":"textbox","id":"sh/03ixkrut","slide":8,"text":"PRÓXIMA DECISÃO","textPreview":"PRÓXIMA DECISÃO","textChars":15,"textLines":1,"bbox":[70,46,500,24]}
+{"kind":"textbox","id":"sh/f29wbmt8","slide":8,"text":"Validar o modelo antes de calibrar a empresa real","textPreview":"Validar o modelo antes de calibrar a empresa real","textChars":49,"textLines":1,"bbox":[70,88,1080,80]}
+{"kind":"textbox","id":"sh/e10fihcn","slide":8,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[74,205,45,28]}
+{"kind":"textbox","id":"sh/d0re9cb2","slide":8,"text":"Pesos, metas e limiares são defensáveis?","textPreview":"Pesos, metas e limiares são defensáveis?","textChars":40,"textLines":1,"bbox":[140,202,950,42]}
+{"kind":"textbox","id":"sh/szidg7uh","slide":8,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[74,277,45,28]}
+{"kind":"textbox","id":"sh/ry9w72tw","slide":8,"text":"O scorecard mede processo sem invadir o mérito jurídico?","textPreview":"O scorecard mede processo sem invadir o mérito jurídico?","textChars":56,"textLines":1,"bbox":[140,274,950,42]}
+{"kind":"textbox","id":"sh/6xgvehcr","slide":8,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[74,349,45,28]}
+{"kind":"textbox","id":"sh/5c7e5cb6","slide":8,"text":"Quais campos exigem validação obrigatória por país?","textPreview":"Quais campos exigem validação obrigatória por país?","textChars":51,"textLines":1,"bbox":[140,346,950,42]}
+{"kind":"textbox","id":"sh/4bydc7ul","slide":8,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[74,421,45,28]}
+{"kind":"textbox","id":"sh/6d4fit8v","slide":8,"text":"Como preservar privilege e reliance em cada tradição jurídica?","textPreview":"Como preservar privilege e reliance em cada tradição jurídica?","textChars":62,"textLines":1,"bbox":[140,418,950,42]}
+{"kind":"textbox","id":"sh/rexwbypg","slide":8,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[74,493,45,28]}
+{"kind":"textbox","id":"sh/sf6xk3q1","slide":8,"text":"Quais parâmetros cabem ao CFO e quais ao Board?","textPreview":"Quais parâmetros cabem ao CFO e quais ao Board?","textChars":47,"textLines":1,"bbox":[140,490,950,42]}
+{"kind":"shape","id":"sh/tgfed87m","slide":8,"bbox":[70,595,1140,54]}
+{"kind":"textbox","id":"sh/i94vet8z","slide":8,"text":"Resultado esperado: parâmetros aprovados, lacunas atribuídas e piloto autorizado.","textPreview":"Resultado esperado: parâmetros aprovados, lacunas atribuídas e piloto autorizado.","textChars":81,"textLines":1,"bbox":[95,611,1090,28]}
+{"kind":"textbox","id":"sh/jadw7yp4","slide":8,"text":"EMPRESA CONFIDENCIAL · NÃO CONSTITUI PARECER","textPreview":"EMPRESA CONFIDENCIAL · NÃO CONSTITUI PARECER","textChars":44,"textLines":1,"bbox":[70,681,700,18]}
+{"kind":"textbox","id":"sh/4bmdg3qp","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1160,681,50,18]}
+{"kind":"notes","id":"nt/6rjst7","slide":8,"text":""}
