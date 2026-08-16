@@ -1,0 +1,36 @@
+name: Retention purge (scheduled)
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Apply the purge (true) or dry-run (false)
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+
+jobs:
+  purge:
+    name: Trigger retention purge per tenant
+    runs-on: ubuntu-latest
+    # Enable by setting the repository variable RETENTION_ENABLED=true and the required secrets.
+    if: vars.RETENTION_ENABLED == 'true'
+    steps:
+      - name: Call the retention endpoint for each tenant
+        env:
+          BASE_URL: ${{ secrets.RETENTION_BASE_URL }}
+          SERVICE_TOKEN: ${{ secrets.RETENTION_JOB_TOKEN }}
+          TENANT_IDS: ${{ secrets.RETENTION_TENANT_IDS }}
+          APPLY: ${{ github.event.inputs.apply || 'true' }}
+        run: |
+          set -euo pipefail
+          for tenant in ${TENANT_IDS}; do
+            echo "Purging tenant ${tenant} (apply=${APPLY})"
+            curl --fail --silent --show-error \
+              -X POST "${BASE_URL}/v1/system/retention/run?tenantId=${tenant}&apply=${APPLY}" \
+              -H "x-service-token: ${SERVICE_TOKEN}"
+          done

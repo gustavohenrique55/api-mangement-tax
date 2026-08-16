@@ -65,11 +65,10 @@ export class PrivacyService {
 
   async purgeByRetention(request: Request, apply: boolean) {
     const tenantId = request.actor!.tenantId;
-    const retentionDays = Number(process.env.DATA_RETENTION_DAYS ?? 3650);
-    const cutoff = new Date(
-      Date.now() - retentionDays * 86_400_000,
-    ).toISOString();
-    const result = await this.records.purgeExpired(tenantId, cutoff, apply);
+    const { retentionDays, cutoff, result } = await this.runPurge(
+      tenantId,
+      apply,
+    );
     if (apply && result.purged > 0) {
       await this.audit.append(
         request,
@@ -79,8 +78,45 @@ export class PrivacyService {
         { purged: result.purged },
       );
     }
+    return this.report(tenantId, retentionDays, cutoff, result, apply);
+  }
+
+  async purgeForTenant(tenantId: string, apply: boolean) {
+    const { retentionDays, cutoff, result } = await this.runPurge(
+      tenantId,
+      apply,
+    );
+    if (apply && result.purged > 0) {
+      await this.audit.appendSystem(
+        tenantId,
+        "privacy.retention-purge",
+        "retention",
+        `cutoff:${cutoff}`,
+        { purged: result.purged },
+      );
+    }
+    return this.report(tenantId, retentionDays, cutoff, result, apply);
+  }
+
+  private async runPurge(tenantId: string, apply: boolean) {
+    const retentionDays = Number(process.env.DATA_RETENTION_DAYS ?? 3650);
+    const cutoff = new Date(
+      Date.now() - retentionDays * 86_400_000,
+    ).toISOString();
+    const result = await this.records.purgeExpired(tenantId, cutoff, apply);
+    return { retentionDays, cutoff, result };
+  }
+
+  private report(
+    tenantId: string,
+    retentionDays: number,
+    cutoff: string,
+    result: { eligible: string[]; purged: number },
+    apply: boolean,
+  ) {
     return {
       mode: apply ? "APPLIED" : "DRY_RUN",
+      tenantId,
       retentionDays,
       cutoff,
       eligible: result.eligible.length,

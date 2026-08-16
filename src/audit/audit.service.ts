@@ -21,10 +21,9 @@ export class AuditService {
     resourceId: string,
     metadata: Record<string, unknown>,
   ): Promise<AuditEvent> {
-    const tenantId = request.actor!.tenantId;
-    const base = {
+    return this.persist({
       id: randomUUID(),
-      tenantId,
+      tenantId: request.actor!.tenantId,
       occurredAt: new Date().toISOString(),
       actorSubject: request.actor!.subject,
       action,
@@ -32,17 +31,43 @@ export class AuditService {
       resourceId,
       correlationId: request.correlationId,
       metadata,
-    };
+    });
+  }
+
+  // System-initiated events (scheduled jobs) have no HTTP request context.
+  async appendSystem(
+    tenantId: string,
+    action: string,
+    resourceType: string,
+    resourceId: string,
+    metadata: Record<string, unknown>,
+  ): Promise<AuditEvent> {
+    return this.persist({
+      id: randomUUID(),
+      tenantId,
+      occurredAt: new Date().toISOString(),
+      actorSubject: "system:retention-job",
+      action,
+      resourceType,
+      resourceId,
+      correlationId: randomUUID(),
+      metadata,
+    });
+  }
+
+  private async persist(
+    base: Omit<AuditEvent, "previousMac" | "mac">,
+  ): Promise<AuditEvent> {
     const sign = (previousMac: string | null): AuditEvent => {
       const unsigned = { ...base, previousMac };
       return { ...unsigned, mac: this.sign(unsigned) };
     };
     if (this.database.enabled) {
-      return this.database.appendAuditEvent(tenantId, sign);
+      return this.database.appendAuditEvent(base.tenantId, sign);
     }
     const previous = [...this.events]
       .reverse()
-      .find((event) => event.tenantId === tenantId);
+      .find((event) => event.tenantId === base.tenantId);
     const event = sign(previous?.mac ?? null);
     this.events.push(event);
     return event;

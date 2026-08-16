@@ -18,6 +18,7 @@ describe("API Management Tax", () => {
     process.env.AUTH_MODE = "synthetic";
     process.env.PERSISTENCE_MODE = "memory";
     process.env.COMPANY_DISPLAY_NAME = "Empresa Confidencial";
+    process.env.RETENTION_JOB_TOKEN = "test-service-token";
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -704,5 +705,30 @@ describe("API Management Tax", () => {
     } finally {
       delete process.env.DATA_RETENTION_DAYS;
     }
+  });
+
+  it("guards the system retention job with a service token", async () => {
+    await request(app.getHttpServer())
+      .post("/v1/system/retention/run?tenantId=tenant-job")
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .post("/v1/system/retention/run?tenantId=tenant-job")
+      .set("x-service-token", "wrong-token")
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .post("/v1/system/retention/run")
+      .set("x-service-token", "test-service-token")
+      .expect(400);
+
+    const report = await request(app.getHttpServer())
+      .post("/v1/system/retention/run?tenantId=tenant-job")
+      .set("x-service-token", "test-service-token")
+      .expect(201);
+    expect(report.body).toMatchObject({
+      mode: "DRY_RUN",
+      tenantId: "tenant-job",
+    });
   });
 });

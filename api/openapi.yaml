@@ -31,6 +31,8 @@ tags:
     description: Cenário regional sintético, idempotente e isolado por tenant.
   - name: Privacy
     description: Retenção e direitos do titular (LGPD) — acesso, portabilidade e eliminação.
+  - name: System
+    description: Operações de sistema (máquina-a-máquina) autenticadas por token de serviço.
 paths:
   /v1/health:
     get:
@@ -632,6 +634,37 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+  /v1/system/retention/run:
+    post:
+      summary: Executar o expurgo de retenção de um tenant (job de sistema)
+      tags: [System]
+      operationId: runRetentionJob
+      security: []
+      description: >-
+        Autenticado por token de serviço (cabeçalho x-service-token), não por identidade de usuário.
+        Dry-run por padrão; use apply=true para anonimizar. Não afeta a trilha de auditoria.
+      parameters:
+        - name: tenantId
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+        - name: apply
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+      responses:
+        "201":
+          description: Relatório de elegibilidade (dry-run) ou de expurgo aplicado
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503":
+          description: Job de retenção não configurado
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 components:
   securitySchemes:
     bearerAuth:
