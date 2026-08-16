@@ -1,10 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import type { Request } from "express";
 import { AuditService } from "../audit/audit.service";
+import { ManagementRecordRepository } from "../database/management-record.repository";
 
 @Injectable()
 export class PrivacyService {
-  constructor(private readonly audit: AuditService) {}
+  constructor(
+    private readonly audit: AuditService,
+    private readonly records: ManagementRecordRepository,
+  ) {}
 
   retentionPolicy() {
     return {
@@ -56,6 +60,33 @@ export class PrivacyService {
         legalBasis:
           "LGPD art. 16 — retenção obrigatória; a trilha de auditoria permanece imutável.",
       },
+    };
+  }
+
+  async purgeByRetention(request: Request, apply: boolean) {
+    const tenantId = request.actor!.tenantId;
+    const retentionDays = Number(process.env.DATA_RETENTION_DAYS ?? 3650);
+    const cutoff = new Date(
+      Date.now() - retentionDays * 86_400_000,
+    ).toISOString();
+    const result = await this.records.purgeExpired(tenantId, cutoff, apply);
+    if (apply && result.purged > 0) {
+      await this.audit.append(
+        request,
+        "privacy.retention-purge",
+        "retention",
+        `cutoff:${cutoff}`,
+        { purged: result.purged },
+      );
+    }
+    return {
+      mode: apply ? "APPLIED" : "DRY_RUN",
+      retentionDays,
+      cutoff,
+      eligible: result.eligible.length,
+      purged: result.purged,
+      ids: result.eligible,
+      note: "A trilha de auditoria é imutável e não é afetada por esta rotina (LGPD art. 16).",
     };
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Req } from "@nestjs/common";
+import { Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { RequireRoles } from "../security/roles.decorator";
 import { PrivacyService } from "./privacy.service";
@@ -21,5 +21,13 @@ export class PrivacyController {
   @Post("data-subjects/:subject/erasure")
   eraseSubject(@Req() request: Request, @Param("subject") subject: string) {
     return this.privacy.eraseSubject(request, subject);
+  }
+
+  @Post("retention/purge")
+  purgeByRetention(
+    @Req() request: Request,
+    @Query("apply") apply?: string,
+  ) {
+    return this.privacy.purgeByRetention(request, apply === "true");
   }
 }

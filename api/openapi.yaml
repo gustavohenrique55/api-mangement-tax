@@ -29,6 +29,8 @@ tags:
     description: Parâmetros do CFO, alçadas e gestão da rede regional de escritórios tributários.
   - name: Demo
     description: Cenário regional sintético, idempotente e isolado por tenant.
+  - name: Privacy
+    description: Retenção e direitos do titular (LGPD) — acesso, portabilidade e eliminação.
 paths:
   /v1/health:
     get:
@@ -557,6 +559,79 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/privacy/retention-policy:
+    get:
+      summary: Consultar a política de retenção (LGPD)
+      tags: [Privacy]
+      operationId: getRetentionPolicy
+      description: Requer função tax-admin.
+      responses:
+        "200":
+          description: Política de retenção e base legal
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /v1/privacy/data-subjects/{subject}/export:
+    get:
+      summary: Exportar os dados do titular (acesso e portabilidade)
+      tags: [Privacy]
+      operationId: exportDataSubject
+      description: Requer função tax-admin.
+      parameters:
+        - $ref: "#/components/parameters/DataSubject"
+      responses:
+        "200":
+          description: Dados pessoais do titular no tenant
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /v1/privacy/data-subjects/{subject}/erasure:
+    post:
+      summary: Solicitar a eliminação de dados do titular
+      tags: [Privacy]
+      operationId: eraseDataSubject
+      description: >-
+        Requer função tax-admin. A trilha de auditoria é retida por obrigação legal
+        (LGPD art. 16) e permanece imutável; a operação é auditada.
+      parameters:
+        - $ref: "#/components/parameters/DataSubject"
+      responses:
+        "201":
+          description: Relatório de eliminação e retenção legal
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /v1/privacy/retention/purge:
+    post:
+      summary: Expurgar registros gerenciais além da retenção
+      tags: [Privacy]
+      operationId: purgeByRetention
+      description: >-
+        Requer função tax-admin. Dry-run por padrão; use apply=true para anonimizar.
+        Não afeta a trilha de auditoria (imutável).
+      parameters:
+        - name: apply
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+      responses:
+        "201":
+          description: Relatório de elegibilidade (dry-run) ou de expurgo aplicado
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 components:
   securitySchemes:
     bearerAuth:
@@ -578,6 +653,11 @@ components:
       schema:
         type: string
         format: uuid
+    DataSubject:
+      name: subject
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 200 }
   requestBodies:
     DomainRecord:
       required: true
@@ -629,6 +709,11 @@ components:
           schema: { $ref: "#/components/schemas/Problem" }
     Conflict:
       description: Conflito com o estado atual
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    TooManyRequests:
+      description: Limite de requisições excedido
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }

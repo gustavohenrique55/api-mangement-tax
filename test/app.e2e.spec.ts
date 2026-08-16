@@ -674,4 +674,35 @@ describe("API Management Tax", () => {
       .set({ ...headers, "x-synthetic-roles": "tax-viewer" })
       .expect(403);
   });
+
+  it("purges management records past retention (dry-run by default)", async () => {
+    const headers = {
+      "x-synthetic-tenant-id": "tenant-purge",
+      "x-synthetic-subject": "purge.admin",
+      "x-synthetic-roles": "tax-admin",
+    };
+    await request(app.getHttpServer())
+      .post("/v1/demo/seed")
+      .set(headers)
+      .expect(201);
+
+    const dryRun = await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge")
+      .set(headers)
+      .expect(201);
+    expect(dryRun.body).toMatchObject({ mode: "DRY_RUN", purged: 0 });
+    expect(dryRun.body.eligible).toBe(0);
+
+    process.env.DATA_RETENTION_DAYS = "0";
+    try {
+      const applied = await request(app.getHttpServer())
+        .post("/v1/privacy/retention/purge?apply=true")
+        .set(headers)
+        .expect(201);
+      expect(applied.body.mode).toBe("APPLIED");
+      expect(applied.body.purged).toBeGreaterThanOrEqual(1);
+    } finally {
+      delete process.env.DATA_RETENTION_DAYS;
+    }
+  });
 });
