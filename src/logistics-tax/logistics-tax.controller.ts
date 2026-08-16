@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { AuditService } from "../audit/audit.service";
+import { CountryScope } from "../security/country-scope.decorator";
 import { RequireRoles } from "../security/roles.decorator";
 import {
   CreateCustomsRegimeDto,
@@ -38,6 +39,7 @@ export class LogisticsTaxController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("operational-profiles")
   createOperationalProfile(
     @Req() request: Request,
@@ -58,6 +60,7 @@ export class LogisticsTaxController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("legal-entities")
   createLegalEntity(
     @Req() request: Request,
@@ -74,6 +77,7 @@ export class LogisticsTaxController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("establishments")
   createEstablishment(
     @Req() request: Request,
@@ -94,6 +98,7 @@ export class LogisticsTaxController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("originCountryCode", "destinationCountryCode")
   @Post("logistics-lanes")
   createLogisticsLane(
     @Req() request: Request,
@@ -114,6 +119,7 @@ export class LogisticsTaxController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("customs-regimes")
   createCustomsRegime(
     @Req() request: Request,
@@ -134,6 +140,7 @@ export class LogisticsTaxController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("tax-rules")
   createTaxRule(@Req() request: Request, @Body() body: CreateTaxRuleDto) {
     return this.create("taxRules", "tax-rule", request, { ...body }, [
@@ -147,6 +154,7 @@ export class LogisticsTaxController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("tax-documents")
   createTaxDocument(
     @Req() request: Request,
@@ -165,6 +173,7 @@ export class LogisticsTaxController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("tax-recovery-opportunities")
   createTaxRecoveryOpportunity(
     @Req() request: Request,
@@ -190,6 +199,7 @@ export class LogisticsTaxController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("hostCountryCode")
   @Post("permanent-establishment-assessments")
   createPermanentEstablishmentAssessment(
     @Req() request: Request,

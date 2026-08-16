@@ -594,4 +594,30 @@ describe("API Management Tax", () => {
       .set(viewer)
       .expect(403);
   });
+
+  it("enforces country scope for country managers via the central guard", async () => {
+    const base = {
+      "x-synthetic-tenant-id": "tenant-scope",
+      "x-synthetic-subject": "cm-scope",
+      "x-synthetic-roles": "country-manager",
+    };
+    const jurisdiction = {
+      countryCode: "BR",
+      name: "Brasil",
+      managementBlock: "SOUTH_AMERICA",
+      jurisdictionType: "SOVEREIGN_STATE",
+    };
+
+    await request(app.getHttpServer())
+      .post("/v1/jurisdictions")
+      .set({ ...base, "x-synthetic-country-scopes": "MX" })
+      .send(jurisdiction)
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .post("/v1/jurisdictions")
+      .set({ ...base, "x-synthetic-country-scopes": "BR" })
+      .send(jurisdiction)
+      .expect(201);
+  });
 });

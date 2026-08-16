@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -10,6 +9,7 @@ import {
 } from "@nestjs/common";
 import type { Request } from "express";
 import { AuditService } from "../audit/audit.service";
+import { CountryScope } from "../security/country-scope.decorator";
 import { RequireRoles } from "../security/roles.decorator";
 import {
   CreateJurisdictionDto,
@@ -45,17 +45,10 @@ export class JurisdictionsController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post()
   async create(@Req() request: Request, @Body() body: CreateJurisdictionDto) {
     const actor = request.actor!;
-    if (
-      !actor.roles.includes("tax-admin") &&
-      !actor.countryScopes.includes(body.countryCode.toUpperCase())
-    ) {
-      throw new ForbiddenException(
-        "Country manager is outside the requested country scope",
-      );
-    }
     const record = await this.jurisdictions.create(actor.tenantId, body);
     await this.audit.append(
       request,

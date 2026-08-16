@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
   Get,
   Post,
   Query,
@@ -9,6 +8,7 @@ import {
 } from "@nestjs/common";
 import type { Request } from "express";
 import { AuditService } from "../audit/audit.service";
+import { CountryScope } from "../security/country-scope.decorator";
 import { RequireRoles } from "../security/roles.decorator";
 import {
   CreateEtrMeasurementDto,
@@ -33,12 +33,12 @@ export class IndicatorsController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("office-scorecards")
   async createScorecard(
     @Req() request: Request,
     @Body() body: CreateOfficeScorecardDto,
   ) {
-    this.assertCountryScope(request, body.countryCode);
     return this.auditCreation(
       request,
       "office-scorecard",
@@ -55,12 +55,12 @@ export class IndicatorsController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("etr-measurements")
   async createEtr(
     @Req() request: Request,
     @Body() body: CreateEtrMeasurementDto,
   ) {
-    this.assertCountryScope(request, body.countryCode);
     return this.auditCreation(
       request,
       "etr-measurement",
@@ -77,12 +77,12 @@ export class IndicatorsController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("demands")
   async createDemand(
     @Req() request: Request,
     @Body() body: CreateTaxDemandDto,
   ) {
-    this.assertCountryScope(request, body.countryCode);
     return this.auditCreation(
       request,
       "tax-demand",
@@ -99,12 +99,12 @@ export class IndicatorsController {
   }
 
   @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
   @Post("contingencies")
   async createContingency(
     @Req() request: Request,
     @Body() body: CreateTaxContingencyDto,
   ) {
-    this.assertCountryScope(request, body.countryCode);
     return this.auditCreation(
       request,
       "tax-contingency",
@@ -116,18 +116,6 @@ export class IndicatorsController {
   @Get("executive-dashboard")
   dashboard(@Req() request: Request, @Query("period") period?: string) {
     return this.indicators.dashboard(request, period);
-  }
-
-  private assertCountryScope(request: Request, countryCode: string) {
-    const actor = request.actor!;
-    if (
-      !actor.roles.includes("tax-admin") &&
-      !actor.countryScopes.includes(countryCode.toUpperCase())
-    ) {
-      throw new ForbiddenException(
-        "The identity is outside the requested country scope",
-      );
-    }
   }
 
   private async auditCreation(

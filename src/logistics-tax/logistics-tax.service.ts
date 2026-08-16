@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import type { Request } from "express";
 import { ManagementRecordRepository } from "../database/management-record.repository";
@@ -42,7 +42,6 @@ export class LogisticsTaxService {
     input: Record<string, unknown>,
     countryCodes: string[] = [],
   ): Promise<DomainRecord> {
-    this.assertCountryMutationAllowed(request, countryCodes);
     const now = new Date().toISOString();
     const record: DomainRecord = {
       id: randomUUID(),
@@ -57,23 +56,6 @@ export class LogisticsTaxService {
       record,
       countryCodes,
     )) as DomainRecord;
-  }
-
-  private assertCountryMutationAllowed(
-    request: Request,
-    countryCodes: string[],
-  ): void {
-    const actor = request.actor!;
-    if (actor.roles.includes("tax-admin")) return;
-    const normalized = countryCodes.map((code) => code.toUpperCase());
-    if (
-      normalized.length === 0 ||
-      normalized.some((code) => !actor.countryScopes.includes(code))
-    ) {
-      throw new ForbiddenException(
-        "The identity is outside one or more requested country scopes",
-      );
-    }
   }
 
   private isVisibleForCountryScopes(
