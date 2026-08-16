@@ -620,4 +620,58 @@ describe("API Management Tax", () => {
       .send(jurisdiction)
       .expect(201);
   });
+
+  it("supports LGPD retention policy, data export and erasure", async () => {
+    const headers = {
+      "x-synthetic-tenant-id": "tenant-privacy",
+      "x-synthetic-subject": "operator-x",
+      "x-synthetic-roles": "tax-admin",
+    };
+    await request(app.getHttpServer())
+      .post("/v1/jurisdictions")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        name: "Brasil",
+        managementBlock: "SOUTH_AMERICA",
+        jurisdictionType: "SOVEREIGN_STATE",
+      })
+      .expect(201);
+
+    const policy = await request(app.getHttpServer())
+      .get("/v1/privacy/retention-policy")
+      .set(headers)
+      .expect(200);
+    expect(policy.body).toMatchObject({ auditImmutable: true });
+    expect(policy.body.dataRetentionDays).toBeTypeOf("number");
+
+    const exported = await request(app.getHttpServer())
+      .get("/v1/privacy/data-subjects/operator-x/export")
+      .set(headers)
+      .expect(200);
+    expect(exported.body.auditTrail.length).toBeGreaterThanOrEqual(1);
+    expect(
+      exported.body.auditTrail.every(
+        (event: { actorSubject: string }) =>
+          event.actorSubject === "operator-x",
+      ),
+    ).toBe(true);
+
+    const erasure = await request(app.getHttpServer())
+      .post("/v1/privacy/data-subjects/operator-x/erasure")
+      .set(headers)
+      .expect(201);
+    expect(erasure.body).toMatchObject({
+      subject: "operator-x",
+      status: "COMPLETED",
+    });
+    expect(
+      erasure.body.retainedForLegalObligation.auditEvents,
+    ).toBeGreaterThanOrEqual(1);
+
+    await request(app.getHttpServer())
+      .get("/v1/privacy/retention-policy")
+      .set({ ...headers, "x-synthetic-roles": "tax-viewer" })
+      .expect(403);
+  });
 });
