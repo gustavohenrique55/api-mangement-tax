@@ -20,6 +20,54 @@ export class PrivacyService {
     };
   }
 
+  // Registro de Operações de Tratamento (ROPA) / base para RIPD.
+  // Conteúdo é modelo técnico e requer validação do DPO/jurídico.
+  processingActivities() {
+    return {
+      version: "2026-08",
+      legalValidationStatus: "PENDING_DPO_REVIEW",
+      disclaimer:
+        "Modelo técnico versionado; a base legal, salvaguardas e transferências internacionais devem ser validadas pelo DPO/jurídico.",
+      activities: [
+        {
+          id: "audit-trail",
+          purpose: "Registro imutável de operações para auditoria e compliance",
+          dataCategories: ["identificador do operador", "metadados da ação"],
+          legalBasis: "LGPD art. 7º, II — cumprimento de obrigação legal/regulatória",
+          retentionDays: Number(process.env.AUDIT_RETENTION_DAYS ?? 3650),
+          internationalTransfer: {
+            occurs: false,
+            safeguards: null,
+          },
+        },
+        {
+          id: "operator-identity",
+          purpose: "Autenticação e autorização de operadores (RBAC e escopos)",
+          dataCategories: ["identificador do operador", "papéis", "escopos de país"],
+          legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
+          retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
+          internationalTransfer: {
+            occurs: false,
+            safeguards: null,
+          },
+        },
+        {
+          id: "multijurisdiction-governance",
+          purpose:
+            "Governança tributária multi-jurisdicional (LATAM e Caribe)",
+          dataCategories: ["dados gerenciais tributários", "país/jurisdição"],
+          legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
+          retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
+          internationalTransfer: {
+            occurs: true,
+            mechanism: "LGPD art. 33, VIII — cláusulas contratuais padrão",
+            note: "Transferência entre jurisdições LATAM/Caribe sujeita a avaliação de adequação e salvaguardas contratuais.",
+          },
+        },
+      ],
+    };
+  }
+
   async exportSubject(request: Request, subject: string) {
     const tenantId = request.actor!.tenantId;
     const events = await this.audit.list(tenantId);

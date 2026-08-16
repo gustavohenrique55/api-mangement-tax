@@ -13,6 +13,11 @@ export class PrivacyController {
     return this.privacy.retentionPolicy();
   }
 
+  @Get("processing-activities")
+  processingActivities() {
+    return this.privacy.processingActivities();
+  }
+
   @Get("data-subjects/:subject/export")
   exportSubject(@Req() request: Request, @Param("subject") subject: string) {
     return this.privacy.exportSubject(request, subject);

@@ -646,6 +646,18 @@ describe("API Management Tax", () => {
     expect(policy.body).toMatchObject({ auditImmutable: true });
     expect(policy.body.dataRetentionDays).toBeTypeOf("number");
 
+    const ropa = await request(app.getHttpServer())
+      .get("/v1/privacy/processing-activities")
+      .set(headers)
+      .expect(200);
+    expect(ropa.body).toMatchObject({ legalValidationStatus: "PENDING_DPO_REVIEW" });
+    expect(
+      ropa.body.activities.some(
+        (activity: { internationalTransfer: { occurs: boolean } }) =>
+          activity.internationalTransfer.occurs === true,
+      ),
+    ).toBe(true);
+
     const exported = await request(app.getHttpServer())
       .get("/v1/privacy/data-subjects/operator-x/export")
       .set(headers)

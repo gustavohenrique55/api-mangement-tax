@@ -576,6 +576,23 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+  /v1/privacy/processing-activities:
+    get:
+      summary: Consultar o registro de operações de tratamento (ROPA/RIPD)
+      tags: [Privacy]
+      operationId: getProcessingActivities
+      description: >-
+        Requer função tax-admin. Modelo técnico versionado (base legal, retenção e
+        transferência internacional) sujeito à validação do DPO/jurídico.
+      responses:
+        "200":
+          description: Registro de operações de tratamento
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
   /v1/privacy/data-subjects/{subject}/export:
     get:
       summary: Exportar os dados do titular (acesso e portabilidade)
