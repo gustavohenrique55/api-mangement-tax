@@ -10,6 +10,12 @@ async function bootstrap(): Promise<void> {
   if (process.env.NODE_ENV === "production" && authMode === "synthetic") {
     throw new Error("AUTH_MODE=synthetic is forbidden in production");
   }
+  if (
+    (authMode === "jwt" || authMode === "oidc") &&
+    !process.env.OIDC_JWKS_URI
+  ) {
+    throw new Error("OIDC_JWKS_URI is required when AUTH_MODE is jwt/oidc");
+  }
   if (process.env.NODE_ENV === "production" && !process.env.AUDIT_HMAC_KEY) {
     throw new Error("AUDIT_HMAC_KEY is required in production");
   }

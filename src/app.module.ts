@@ -11,9 +11,9 @@ import { IndicatorsModule } from "./indicators/indicators.module";
 import { JurisdictionsModule } from "./jurisdictions/jurisdictions.module";
 import { LogisticsTaxModule } from "./logistics-tax/logistics-tax.module";
 import { CorrelationMiddleware } from "./platform/correlation.middleware";
+import { AuthGuard } from "./security/auth.guard";
 import { CountryScopeGuard } from "./security/country-scope.guard";
 import { RolesGuard } from "./security/roles.guard";
-import { SyntheticAuthGuard } from "./security/synthetic-auth.guard";
 
 @Module({
   imports: [
@@ -34,7 +34,7 @@ import { SyntheticAuthGuard } from "./security/synthetic-auth.guard";
   controllers: [HealthController, IdentityController],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    { provide: APP_GUARD, useClass: SyntheticAuthGuard },
+    { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: CountryScopeGuard },
   ],
