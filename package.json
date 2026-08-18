@@ -7,6 +7,7 @@
   "engines": {
     "node": ">=24 <25"
   },
+  "packageManager": "pnpm@11.22.0",
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",
@@ -20,7 +21,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
-    "check": "pnpm openapi:lint && pnpm lint && pnpm test && pnpm build"
+    "check": "redocly lint api/openapi.yaml && eslint . --max-warnings=0 && vitest run && nest build"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.1",
