@@ -10,6 +10,7 @@ import { IdentityController } from "./identity/identity.controller";
 import { IndicatorsModule } from "./indicators/indicators.module";
 import { JurisdictionsModule } from "./jurisdictions/jurisdictions.module";
 import { LogisticsTaxModule } from "./logistics-tax/logistics-tax.module";
+import { OnboardingModule } from "./onboarding/onboarding.module";
 import { PrivacyModule } from "./privacy/privacy.module";
 import { CorrelationMiddleware } from "./platform/correlation.middleware";
 import { AuthGuard } from "./security/auth.guard";
@@ -32,6 +33,7 @@ import { RolesGuard } from "./security/roles.guard";
     LogisticsTaxModule,
     IndicatorsModule,
     PrivacyModule,
+    OnboardingModule,
   ],
   controllers: [HealthController, IdentityController],
   providers: [

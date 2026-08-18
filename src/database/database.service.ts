@@ -24,6 +24,7 @@ export class DatabaseService implements OnModuleDestroy {
   private readonly client?: PrismaClient;
   private readonly appRole: string | undefined;
   private readonly auditRole: string | undefined;
+  private readonly memoryTenants = new Set<string>();
 
   constructor() {
     const connectionString = process.env.DATABASE_URL;
@@ -110,6 +111,34 @@ export class DatabaseService implements OnModuleDestroy {
         previousMac: row.previousMac,
         mac: row.mac,
       }));
+    });
+  }
+
+  async provisionTenant(
+    tenantId: string,
+    displayName: string,
+  ): Promise<{ created: boolean }> {
+    if (!this.client) {
+      const created = !this.memoryTenants.has(tenantId);
+      this.memoryTenants.add(tenantId);
+      return { created };
+    }
+    return this.client.$transaction(async (transaction) => {
+      if (this.appRole) {
+        await transaction.$executeRawUnsafe(`SET LOCAL ROLE "${this.appRole}"`);
+      }
+      await transaction.$executeRawUnsafe(
+        "SELECT set_config('app.tenant_id', $1, true)",
+        tenantId,
+      );
+      const existing = await transaction.tenant.findUnique({
+        where: { id: tenantId },
+      });
+      if (existing) return { created: false };
+      await transaction.tenant.create({
+        data: { id: tenantId, displayName },
+      });
+      return { created: true };
     });
   }
 

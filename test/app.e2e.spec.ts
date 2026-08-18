@@ -18,7 +18,7 @@ describe("API Management Tax", () => {
     process.env.AUTH_MODE = "synthetic";
     process.env.PERSISTENCE_MODE = "memory";
     process.env.COMPANY_DISPLAY_NAME = "Empresa Confidencial";
-    process.env.RETENTION_JOB_TOKEN = "test-service-token";
+    process.env.SERVICE_TOKEN = "test-service-token";
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -742,5 +742,34 @@ describe("API Management Tax", () => {
       mode: "DRY_RUN",
       tenantId: "tenant-job",
     });
+  });
+
+  it("provisions a tenant via the token-guarded system endpoint", async () => {
+    const tenantId = "22222222-2222-2222-2222-222222222222";
+
+    await request(app.getHttpServer())
+      .post("/v1/system/tenants")
+      .send({ tenantId, displayName: "Tenant Sintético" })
+      .expect(401);
+
+    const created = await request(app.getHttpServer())
+      .post("/v1/system/tenants")
+      .set("x-service-token", "test-service-token")
+      .send({ tenantId, displayName: "Tenant Sintético" })
+      .expect(201);
+    expect(created.body).toMatchObject({ tenantId, status: "CREATED" });
+
+    const again = await request(app.getHttpServer())
+      .post("/v1/system/tenants")
+      .set("x-service-token", "test-service-token")
+      .send({ tenantId, displayName: "Tenant Sintético" })
+      .expect(201);
+    expect(again.body).toMatchObject({ status: "ALREADY_EXISTS" });
+
+    await request(app.getHttpServer())
+      .post("/v1/system/tenants")
+      .set("x-service-token", "test-service-token")
+      .send({ displayName: "sem tenantId" })
+      .expect(400);
   });
 });

@@ -23,7 +23,7 @@ jobs:
       - name: Call the retention endpoint for each tenant
         env:
           BASE_URL: ${{ secrets.RETENTION_BASE_URL }}
-          SERVICE_TOKEN: ${{ secrets.RETENTION_JOB_TOKEN }}
+          SERVICE_TOKEN: ${{ secrets.SERVICE_TOKEN }}
           TENANT_IDS: ${{ secrets.RETENTION_TENANT_IDS }}
           APPLY: ${{ github.event.inputs.apply || 'true' }}
         run: |
