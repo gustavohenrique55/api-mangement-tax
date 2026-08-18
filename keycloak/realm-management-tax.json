@@ -2,6 +2,8 @@
   "realm": "management-tax",
   "enabled": true,
   "sslRequired": "none",
+  "registrationAllowed": true,
+  "resetPasswordAllowed": true,
   "roles": {
     "realm": [
       { "name": "tax-admin" },
@@ -67,6 +69,15 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "api-admin",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "api-admin-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
     }
   ],
   "users": [
@@ -84,6 +95,26 @@
       },
       "credentials": [{ "type": "password", "value": "demo", "temporary": false }],
       "realmRoles": ["tax-admin"]
+    },
+    {
+      "username": "service-account-api-admin",
+      "enabled": true,
+      "serviceAccountClientId": "api-admin",
+      "clientRoles": {
+        "realm-management": ["manage-users", "view-users", "query-users", "view-realm"]
+      }
     }
-  ]
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "config": {
+          "kc.user.profile.config": [
+            "{\"unmanagedAttributePolicy\":\"ENABLED\",\"attributes\":[{\"name\":\"username\",\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"firstName\",\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}}]}"
+          ]
+        }
+      }
+    ]
+  }
 }

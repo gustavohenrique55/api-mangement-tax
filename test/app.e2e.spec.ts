@@ -772,4 +772,26 @@ describe("API Management Tax", () => {
       .send({ displayName: "sem tenantId" })
       .expect(400);
   });
+
+  it("guards user provisioning and reports when the IdP is not configured", async () => {
+    const body = {
+      username: "novo.operador",
+      email: "novo.operador@example.local",
+      tenantId: "22222222-2222-2222-2222-222222222222",
+      roles: ["tax-viewer"],
+      countryScopes: ["BR"],
+    };
+
+    await request(app.getHttpServer())
+      .post("/v1/system/users")
+      .send(body)
+      .expect(401);
+
+    // Keycloak admin is not configured in this suite -> graceful 503.
+    await request(app.getHttpServer())
+      .post("/v1/system/users")
+      .set("x-service-token", "test-service-token")
+      .send(body)
+      .expect(503);
+  });
 });
