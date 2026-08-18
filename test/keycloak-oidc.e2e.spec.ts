@@ -6,8 +6,9 @@ import { AppModule } from "../src/app.module";
 import { ProblemDetailsFilter } from "../src/platform/problem-details.filter";
 
 // Runs only when a Keycloak dev instance is available:
-//   docker compose --profile idp up -d
-//   KEYCLOAK_URL=http://localhost:8080 pnpm test
+//   docker compose --profile idp up -d keycloak
+//   KEYCLOAK_URL=http://localhost:8080 pnpm test:oidc
+// CI runs this in the dedicated `oidc-integration` job.
 const keycloakUrl = process.env.KEYCLOAK_URL;
 const realm = `${keycloakUrl}/realms/management-tax`;
 

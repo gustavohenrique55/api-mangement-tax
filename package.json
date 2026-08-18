@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rls": "tsx test/rls.integration.ts",
+    "test:oidc": "vitest run test/keycloak-oidc.e2e.spec.ts",
     "lint": "eslint . --max-warnings=0",
     "format:check": "prettier --check .",
     "openapi:lint": "redocly lint api/openapi.yaml",
