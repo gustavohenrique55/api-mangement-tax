@@ -15,5 +15,17 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    profiles: ["idp"]
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/realm-management-tax.json:/opt/keycloak/data/import/realm-management-tax.json:ro
+
 volumes:
   postgres_data:
