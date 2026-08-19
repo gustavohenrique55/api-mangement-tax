@@ -66,12 +66,28 @@ describe("API Management Tax", () => {
     ).toEqual(["CENTRAL_AMERICA", "CARIBBEAN_ISLANDS", "SOUTH_AMERICA"]);
     expect(response.body.data[1].coverageStatus).toBe("PENDING_CONFIRMATION");
     expect(response.body.data[1].countries).toHaveLength(13);
-    expect(response.body.data[1].territories).toHaveLength(6);
+    expect(response.body.data[1].territories).toHaveLength(15);
     expect(
       response.body.data[1].territories.map(
         (item: { countryCode: string }) => item.countryCode,
       ),
-    ).toEqual(["PR", "AW", "CW", "KY", "GP", "MQ"]);
+    ).toEqual([
+      "PR",
+      "AW",
+      "CW",
+      "KY",
+      "GP",
+      "MQ",
+      "SX",
+      "BQ",
+      "VG",
+      "VI",
+      "TC",
+      "AI",
+      "MS",
+      "MF",
+      "BL",
+    ]);
     expect(response.body.data[1].territories[0]).toMatchObject({
       jurisdictionType: "NON_SOVEREIGN_TERRITORY",
       sovereignAuthority: { countryCode: "US", name: "Estados Unidos" },
@@ -181,7 +197,7 @@ describe("API Management Tax", () => {
     expect(audit.body.integrityValid).toBe(true);
   });
 
-  it("supports the ten logistics-tax management domains", async () => {
+  it("supports the eleven logistics-tax management domains", async () => {
     const headers = {
       "x-synthetic-tenant-id": "tenant-logistics",
       "x-synthetic-subject": "logistics.admin",
@@ -247,7 +263,7 @@ describe("API Management Tax", () => {
       })
       .expect(201);
 
-    await request(app.getHttpServer())
+    const customsRegime = await request(app.getHttpServer())
       .post("/v1/customs-regimes")
       .set(headers)
       .send({
@@ -257,8 +273,21 @@ describe("API Management Tax", () => {
         regimeType: "DRAWBACK",
         legalValidationStatus: "PRELIMINARY",
         sourceReference: "Fonte oficial a validar",
+        legalSource: {
+          jurisdictionCode: "BR",
+          instrumentType: "DECREE",
+          instrument: "Decreto n.º 6.759/2009",
+          article: "art. 315",
+          effectiveFrom: "2009-02-05",
+          verificationStatus: "SOURCE_LINKED",
+        },
       })
       .expect(201);
+    expect(customsRegime.body.legalSourceAssessment).toMatchObject({
+      status: "UNVERIFIED",
+      jurisdictionAlignment: "SAME_JURISDICTION",
+      concludesTreatment: false,
+    });
 
     await request(app.getHttpServer())
       .post("/v1/tax-rules")
@@ -337,11 +366,42 @@ describe("API Management Tax", () => {
       .expect(201);
     expect(integration.body.credentialsStored).toBe(false);
 
+    const obligation = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "CBCR",
+        filingFrequency: "ANNUAL",
+        status: "IN_PREPARATION",
+        dueDate: "2026-12-31",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "OCDE BEPS Ação 13",
+        legalSource: {
+          jurisdictionCode: "BR",
+          instrumentType: "ADMINISTRATIVE_RULING",
+          instrument: "Instrução Normativa RFB n.º 1.681/2016",
+          effectiveFrom: "2017-01-01",
+          verificationStatus: "COUNSEL_CONFIRMED",
+          verifiedAt: "2026-01-15",
+          verifiedBy: "Assessoria Jurídica",
+        },
+      })
+      .expect(201);
+    expect(obligation.body.daysUntilDue).toBeTypeOf("number");
+    expect(obligation.body.filingRisk).toBeTruthy();
+    expect(obligation.body.legalSourceAssessment).toMatchObject({
+      status: "VERIFIED",
+      jurisdictionAlignment: "SAME_JURISDICTION",
+      concludesTreatment: false,
+    });
+
     const audit = await request(app.getHttpServer())
       .get("/v1/audit-events")
       .set(headers)
       .expect(200);
-    expect(audit.body.data).toHaveLength(10);
+    expect(audit.body.data).toHaveLength(11);
     expect(audit.body.integrityValid).toBe(true);
   });
 
@@ -504,7 +564,7 @@ describe("API Management Tax", () => {
       seeded: true,
       summary: {
         scenario: "LATAM_CARIBBEAN_LOGISTICS_2026_Q3",
-        recordsCreated: 49,
+        recordsCreated: 65,
         syntheticDataOnly: true,
       },
     });
