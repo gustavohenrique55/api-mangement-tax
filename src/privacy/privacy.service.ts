@@ -20,6 +20,8 @@ export class PrivacyService {
       auditImmutable: true,
       legalBasis:
         "LGPD art. 16 — a trilha de auditoria é retida por obrigação legal/regulatória e é imutável",
+      legalBasisGdpr:
+        "GDPR art. 17(3)(b) e (e) — retenção para cumprimento de obrigação legal e exercício/defesa de direitos; aplicável a titulares vinculados a territórios da UE (Guadalupe, Martinica, Guiana Francesa)",
     };
   }
 
@@ -39,7 +41,7 @@ export class PrivacyService {
       approvedAt: (latest?.approvedAt as string | undefined) ?? null,
       reviewNotes: (latest?.notes as string | undefined) ?? null,
       disclaimer:
-        "Modelo técnico versionado; a base legal, salvaguardas e transferências internacionais devem ser validadas pelo DPO/jurídico.",
+        "Modelo técnico versionado; a base legal, salvaguardas e transferências internacionais devem ser validadas pelo DPO/jurídico. Para titulares vinculados a territórios da UE (Guadalupe, Martinica, Guiana Francesa) e a demais jurisdições com legislação própria de proteção de dados, aplicam-se o GDPR e as leis locais em conjunto com a LGPD.",
       activities: this.ropaActivities(),
     };
   }
@@ -56,6 +58,13 @@ export class PrivacyService {
       );
     }
     const tenantId = request.actor!.tenantId;
+    await this.audit.append(
+      request,
+      "ropa.reviewed",
+      "processing-activities",
+      version,
+      { decision },
+    );
     await this.records.create("ropaApprovals", {
       id: randomUUID(),
       tenantId,
@@ -66,13 +75,6 @@ export class PrivacyService {
       notes: notes ?? null,
       createdAt: new Date().toISOString(),
     });
-    await this.audit.append(
-      request,
-      "ropa.reviewed",
-      "processing-activities",
-      version,
-      { decision },
-    );
     return this.processingActivities(request);
   }
 
@@ -84,6 +86,8 @@ export class PrivacyService {
         dataCategories: ["identificador do operador", "metadados da ação"],
         legalBasis:
           "LGPD art. 7º, II — cumprimento de obrigação legal/regulatória",
+        legalBasisGdpr:
+          "GDPR art. 6(1)(c) — cumprimento de obrigação legal",
         retentionDays: Number(process.env.AUDIT_RETENTION_DAYS ?? 3650),
         internationalTransfer: {
           occurs: false,
@@ -99,6 +103,8 @@ export class PrivacyService {
           "escopos de país",
         ],
         legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
+        legalBasisGdpr:
+          "GDPR art. 6(1)(f) — legítimo interesse do controlador",
         retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
         internationalTransfer: {
           occurs: false,
@@ -110,11 +116,15 @@ export class PrivacyService {
         purpose: "Governança tributária multi-jurisdicional (LATAM e Caribe)",
         dataCategories: ["dados gerenciais tributários", "país/jurisdição"],
         legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
+        legalBasisGdpr:
+          "GDPR art. 6(1)(f) — legítimo interesse do controlador",
         retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
         internationalTransfer: {
           occurs: true,
           mechanism: "LGPD art. 33, VIII — cláusulas contratuais padrão",
-          note: "Transferência entre jurisdições LATAM/Caribe sujeita a avaliação de adequação e salvaguardas contratuais.",
+          mechanismGdpr:
+            "GDPR arts. 44-46 (Capítulo V) — cláusulas contratuais padrão (art. 46(2)(c)) ou decisão de adequação; aplicável a transferências que envolvam territórios da UE (Guadalupe, Martinica, Guiana Francesa)",
+          note: "Transferência entre jurisdições LATAM/Caribe sujeita a avaliação de adequação e salvaguardas contratuais. Transferências de/para territórios da UE exigem base do Capítulo V do GDPR.",
         },
       },
     ];
@@ -159,6 +169,8 @@ export class PrivacyService {
         auditEvents: retained,
         legalBasis:
           "LGPD art. 16 — retenção obrigatória; a trilha de auditoria permanece imutável.",
+        legalBasisGdpr:
+          "GDPR art. 17(3)(b) e (e) — o direito ao apagamento não se aplica à retenção necessária para obrigação legal e para defesa de direitos.",
       },
     };
   }

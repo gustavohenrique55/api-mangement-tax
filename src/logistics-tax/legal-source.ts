@@ -138,40 +138,53 @@ export function assessLegalSource(
     source.jurisdictionCode,
   );
 
+  const effectiveFromMs = new Date(source.effectiveFrom).getTime();
+  const effectiveFromValid = Number.isFinite(effectiveFromMs)
+    ? effectiveFromMs
+    : null;
+  const effectiveToMs = source.effectiveTo
+    ? new Date(source.effectiveTo).getTime()
+    : null;
+
   const verifiedAtMs = source.verifiedAt
     ? new Date(source.verifiedAt).getTime()
     : null;
   const verifiedAtValid =
     verifiedAtMs !== null && Number.isFinite(verifiedAtMs) ? verifiedAtMs : null;
-  const daysSinceVerification =
+  // Clamp to zero: a future verifiedAt is a data-entry error and must not extend
+  // the re-verification window indefinitely. Treat as verified today and warn.
+  const rawDaysSince =
     verifiedAtValid === null ? null : daysBetween(verifiedAtValid, now);
+  const daysSinceVerification =
+    rawDaysSince === null ? null : Math.max(0, rawDaysSince);
   const reverificationDueInDays =
     daysSinceVerification === null
       ? null
       : LEGAL_SOURCE_REVERIFICATION_DAYS - daysSinceVerification;
 
-  const effectiveFromMs = new Date(source.effectiveFrom).getTime();
-  const effectiveToMs = source.effectiveTo
-    ? new Date(source.effectiveTo).getTime()
-    : null;
-
   const status: LegalSourceStatus =
     source.verificationStatus === "SUPERSEDED" ||
     (effectiveToMs !== null && effectiveToMs < now)
       ? "SUPERSEDED"
-      : Number.isFinite(effectiveFromMs) && effectiveFromMs > now
+      : effectiveFromValid !== null && effectiveFromValid > now
         ? "NOT_YET_EFFECTIVE"
         : source.verificationStatus !== "COUNSEL_CONFIRMED"
           ? "UNVERIFIED"
-          : reverificationDueInDays === null || reverificationDueInDays < 0
-            ? "REVERIFICATION_DUE"
-            : "VERIFIED";
+          : reverificationDueInDays === null
+            ? "UNVERIFIED" // COUNSEL_CONFIRMED but no verifiedAt → never actually verified
+            : reverificationDueInDays < 0
+              ? "REVERIFICATION_DUE"
+              : "VERIFIED";
 
   const warnings: string[] = [];
+  if (effectiveFromValid === null) warnings.push("INVALID_EFFECTIVE_FROM_DATE");
   if (!source.officialUrl) warnings.push("MISSING_OFFICIAL_URL");
   if (!source.article) warnings.push("MISSING_ARTICLE_REFERENCE");
   if (source.verificationStatus === "COUNSEL_CONFIRMED" && !source.verifiedAt) {
     warnings.push("COUNSEL_CONFIRMED_WITHOUT_VERIFICATION_DATE");
+  }
+  if (verifiedAtValid !== null && verifiedAtValid > now) {
+    warnings.push("VERIFIED_AT_IN_THE_FUTURE");
   }
   if (context.subnationalCode && !source.subnationalCode) {
     warnings.push("SUBNATIONAL_RULE_CITES_NATIONAL_SOURCE");

@@ -236,6 +236,7 @@ export class LogisticsTaxController {
     );
   }
 
+  @RequireRoles("tax-admin", "country-manager")
   @Get("compliance-obligations")
   async listComplianceObligations(@Req() request: Request) {
     return { data: await this.domain.list("complianceObligations", request) };

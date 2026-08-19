@@ -57,15 +57,20 @@ export class ManagementRecordRepository {
   }
 
   // Anonymizes records past the retention cutoff; dry-run only reports eligibility.
+  // ropaApprovals are compliance evidence — they must never be erased by retention.
   async purgeExpired(
     tenantId: string,
     cutoffIso: string,
     apply: boolean,
   ): Promise<{ eligible: string[]; purged: number }> {
+    const PURGE_EXEMPT_RESOURCE_TYPES = new Set(["ropaApprovals"]);
+
     if (!this.database.enabled) {
       const matches = this.memory.filter(
         (record) =>
-          record.tenantId === tenantId && record.createdAt < cutoffIso,
+          record.tenantId === tenantId &&
+          record.createdAt < cutoffIso &&
+          !PURGE_EXEMPT_RESOURCE_TYPES.has(record.__resourceType as string),
       );
       if (apply) {
         for (const record of matches) tombstone(record);
@@ -77,7 +82,10 @@ export class ManagementRecordRepository {
     }
     return this.database.withTenant(tenantId, async (transaction) => {
       const rows = await transaction.managementRecord.findMany({
-        where: { createdAt: { lt: new Date(cutoffIso) } },
+        where: {
+          createdAt: { lt: new Date(cutoffIso) },
+          resourceType: { notIn: [...PURGE_EXEMPT_RESOURCE_TYPES] },
+        },
         select: { id: true },
       });
       const eligible = rows.map((row) => row.id);

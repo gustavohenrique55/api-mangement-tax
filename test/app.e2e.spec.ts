@@ -397,11 +397,28 @@ describe("API Management Tax", () => {
       concludesTreatment: false,
     });
 
+    // Fix 9: a terminal status must produce filingRisk=RESOLVED even if dueDate is past.
+    const filed = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "OTHER",
+        filingFrequency: "ANNUAL",
+        status: "FILED",
+        dueDate: "2026-07-31",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "Receita Federal",
+      })
+      .expect(201);
+    expect(filed.body.filingRisk).toBe("RESOLVED");
+
     const audit = await request(app.getHttpServer())
       .get("/v1/audit-events")
       .set(headers)
       .expect(200);
-    expect(audit.body.data).toHaveLength(11);
+    expect(audit.body.data).toHaveLength(12);
     expect(audit.body.integrityValid).toBe(true);
   });
 
@@ -654,6 +671,12 @@ describe("API Management Tax", () => {
       .post("/v1/demo/seed")
       .set(viewer)
       .expect(403);
+
+    // Fix 1: compliance-obligations list must also require a role.
+    await request(app.getHttpServer())
+      .get("/v1/compliance-obligations")
+      .set(viewer)
+      .expect(403);
   });
 
   it("enforces country scope for country managers via the central guard", async () => {
@@ -788,6 +811,17 @@ describe("API Management Tax", () => {
     expect(dryRun.body).toMatchObject({ mode: "DRY_RUN", purged: 0 });
     expect(dryRun.body.eligible).toBe(0);
 
+    // Fix 3: ropaApprovals are compliance evidence; they must survive the purge.
+    const ropaVersion = await request(app.getHttpServer())
+      .get("/v1/privacy/processing-activities")
+      .set(headers)
+      .expect(200);
+    await request(app.getHttpServer())
+      .post("/v1/privacy/processing-activities/review")
+      .set(headers)
+      .send({ version: ropaVersion.body.version, decision: "VALIDATED", notes: "DPO sign-off." })
+      .expect(201);
+
     process.env.DATA_RETENTION_DAYS = "0";
     try {
       const applied = await request(app.getHttpServer())
@@ -796,6 +830,13 @@ describe("API Management Tax", () => {
         .expect(201);
       expect(applied.body.mode).toBe("APPLIED");
       expect(applied.body.purged).toBeGreaterThanOrEqual(1);
+
+      // The ropaApproval record must still be present after the purge.
+      const afterPurge = await request(app.getHttpServer())
+        .get("/v1/privacy/processing-activities")
+        .set(headers)
+        .expect(200);
+      expect(afterPurge.body.legalValidationStatus).toBe("VALIDATED");
     } finally {
       delete process.env.DATA_RETENTION_DAYS;
     }

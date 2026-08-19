@@ -348,6 +348,24 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/compliance-obligations:
+    get:
+      summary: Listar obrigações de compliance internacional (CbCR, FATCA/CRS, economic substance, MDR/DAC6, e-invoicing)
+      tags: [LogisticsTax]
+      operationId: listComplianceObligations
+      responses:
+        "200": { $ref: "#/components/responses/DomainRecordList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      summary: Registrar obrigação de compliance e classificar risco de prazo
+      tags: [LogisticsTax]
+      operationId: createComplianceObligation
+      requestBody: { $ref: "#/components/requestBodies/DomainRecord" }
+      responses:
+        "201": { $ref: "#/components/responses/DomainRecordCreated" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /v1/governance/cfo-configurations:
     get:
       summary: Listar configurações executivas do CFO

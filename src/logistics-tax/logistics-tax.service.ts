@@ -28,6 +28,7 @@ export class LogisticsTaxService {
   ): Promise<DomainRecord[]> {
     const actor = request.actor!;
     const records = await this.repository.list(resource, actor.tenantId);
+    const now = Date.now();
     return records
       .filter((record) =>
         this.isVisibleForCountryScopes(
@@ -35,7 +36,9 @@ export class LogisticsTaxService {
           actor.countryScopes,
         ),
       )
-      .map((record) => ({ ...record }) as DomainRecord);
+      .map((record) =>
+        this.withLegalSourceAssessment({ ...record } as DomainRecord, now),
+      );
   }
 
   async create(
@@ -44,20 +47,49 @@ export class LogisticsTaxService {
     input: Record<string, unknown>,
     countryCodes: string[] = [],
   ): Promise<DomainRecord> {
-    const now = new Date().toISOString();
+    const now = Date.now();
+    const isoNow = new Date(now).toISOString();
     const record: DomainRecord = {
       id: randomUUID(),
       tenantId: request.actor!.tenantId,
       ...input,
-      ...this.analysisFields(resource, input),
-      createdAt: now,
-      updatedAt: now,
+      ...this.analysisFields(resource, input, now),
+      createdAt: isoNow,
+      updatedAt: isoNow,
     };
-    return (await this.repository.create(
+    const stored = (await this.repository.create(
       resource,
       record,
       countryCodes,
     )) as DomainRecord;
+    return this.withLegalSourceAssessment(stored, now);
+  }
+
+  private withLegalSourceAssessment(record: DomainRecord, now: number): DomainRecord {
+    const src = record.legalSource;
+    if (
+      src !== null &&
+      src !== undefined &&
+      typeof src === "object" &&
+      !Array.isArray(src)
+    ) {
+      return {
+        ...record,
+        legalSourceAssessment: assessLegalSource(
+          src as LegalSourceInput,
+          {
+            countryCode:
+              typeof record.countryCode === "string" ? record.countryCode : null,
+            subnationalCode:
+              typeof record.subnationalCode === "string"
+                ? record.subnationalCode
+                : null,
+          },
+          now,
+        ),
+      };
+    }
+    return record;
   }
 
   private isVisibleForCountryScopes(
@@ -80,20 +112,8 @@ export class LogisticsTaxService {
   private analysisFields(
     resource: LogisticsResource,
     input: Record<string, unknown>,
+    now: number,
   ): Record<string, unknown> {
-    const legalSourceAssessment =
-      input.legalSource && typeof input.legalSource === "object"
-        ? assessLegalSource(input.legalSource as LegalSourceInput, {
-            countryCode:
-              typeof input.countryCode === "string" ? input.countryCode : null,
-            subnationalCode:
-              typeof input.subnationalCode === "string"
-                ? input.subnationalCode
-                : null,
-          })
-        : null;
-    const ls = legalSourceAssessment ? { legalSourceAssessment } : {};
-
     if (resource === "taxRules") {
       const creditRegime =
         typeof input.creditRegime === "string" ? input.creditRegime : null;
@@ -114,7 +134,6 @@ export class LogisticsTaxService {
           exemptOrZero && rate !== null && rate > 0
             ? "INCONSISTENT_RATE_FOR_EXEMPTION"
             : "OK",
-        ...ls,
       };
     }
     if (
@@ -122,7 +141,7 @@ export class LogisticsTaxService {
       typeof input.statutoryDeadline === "string"
     ) {
       const deadline = new Date(input.statutoryDeadline).getTime();
-      const daysUntilDeadline = Math.ceil((deadline - Date.now()) / 86_400_000);
+      const daysUntilDeadline = Math.ceil((deadline - now) / 86_400_000);
       const channel =
         typeof input.recoveryChannel === "string" ? input.recoveryChannel : "";
       // Judicial routes require earlier action than administrative/offset routes.
@@ -149,38 +168,39 @@ export class LogisticsTaxService {
         recoveryChannelLeadDays: channelLeadDays,
         channelAdjustedDaysRemaining,
         channelAdjustedPrescriptionRisk: classify(channelAdjustedDaysRemaining),
-        ...ls,
       };
     }
     if (resource === "permanentEstablishmentAssessments") {
       return {
         conclusionType: "PRELIMINARY_INDICATOR_ONLY",
         requiresLocalCounsel: true,
-        ...ls,
       };
     }
-    if (
-      resource === "complianceObligations" &&
-      typeof input.dueDate === "string"
-    ) {
+    if (resource === "complianceObligations") {
+      if (typeof input.dueDate !== "string") return {};
       const due = new Date(input.dueDate).getTime();
-      const daysUntilDue = Math.ceil((due - Date.now()) / 86_400_000);
-      return {
-        daysUntilDue,
-        filingRisk:
-          daysUntilDue < 0
+      const daysUntilDue = Math.ceil((due - now) / 86_400_000);
+      const inputStatus =
+        typeof input.status === "string" ? input.status : null;
+      // A terminal status (FILED / EXEMPT / NOT_APPLICABLE) means the obligation
+      // is resolved regardless of the calendar deadline.
+      const filingRisk =
+        inputStatus === "FILED" ||
+        inputStatus === "EXEMPT" ||
+        inputStatus === "NOT_APPLICABLE"
+          ? "RESOLVED"
+          : daysUntilDue < 0
             ? "OVERDUE"
             : daysUntilDue <= 15
               ? "IMMINENT"
               : daysUntilDue <= 45
                 ? "APPROACHING"
-                : "ON_TRACK",
-        ...ls,
-      };
+                : "ON_TRACK";
+      return { daysUntilDue, filingRisk };
     }
     if (resource === "integrationConnections") {
-      return { credentialsStored: false, ...ls };
+      return { credentialsStored: false };
     }
-    return { ...ls };
+    return {};
   }
 }
