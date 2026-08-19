@@ -414,11 +414,52 @@ describe("API Management Tax", () => {
       .expect(201);
     expect(filed.body.filingRisk).toBe("RESOLVED");
 
+    // Fix 5: terminal status without dueDate must also resolve to RESOLVED.
+    const filedNoDueDate = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "OTHER",
+        filingFrequency: "ANNUAL",
+        status: "FILED",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "Receita Federal",
+      })
+      .expect(201);
+    expect(filedNoDueDate.body.filingRisk).toBe("RESOLVED");
+
+    // Fix 4: a past effectiveTo must set status to SUPERSEDED.
+    const superseded = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "OTHER",
+        filingFrequency: "ANNUAL",
+        status: "IN_PREPARATION",
+        dueDate: "2030-12-31",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "Teste",
+        legalSource: {
+          jurisdictionCode: "BR",
+          instrumentType: "DECREE",
+          instrument: "Decreto revogado",
+          effectiveFrom: "2010-01-01",
+          effectiveTo: "2020-01-01",
+          verificationStatus: "SOURCE_LINKED",
+        },
+      })
+      .expect(201);
+    expect(superseded.body.legalSourceAssessment.status).toBe("SUPERSEDED");
+
     const audit = await request(app.getHttpServer())
       .get("/v1/audit-events")
       .set(headers)
       .expect(200);
-    expect(audit.body.data).toHaveLength(12);
+    expect(audit.body.data).toHaveLength(14);
     expect(audit.body.integrityValid).toBe(true);
   });
 
@@ -711,6 +752,11 @@ describe("API Management Tax", () => {
       "x-synthetic-subject": "operator-x",
       "x-synthetic-roles": "tax-admin",
     };
+    const dpoHeaders = {
+      "x-synthetic-tenant-id": "tenant-privacy",
+      "x-synthetic-subject": "operator-x",
+      "x-synthetic-roles": "privacy-officer",
+    };
     await request(app.getHttpServer())
       .post("/v1/jurisdictions")
       .set(headers)
@@ -741,9 +787,15 @@ describe("API Management Tax", () => {
       ),
     ).toBe(true);
 
-    const reviewed = await request(app.getHttpServer())
+    await request(app.getHttpServer())
       .post("/v1/privacy/processing-activities/review")
       .set(headers)
+      .send({ version: ropa.body.version, decision: "VALIDATED", notes: "Aprovado pelo DPO." })
+      .expect(403);
+
+    const reviewed = await request(app.getHttpServer())
+      .post("/v1/privacy/processing-activities/review")
+      .set(dpoHeaders)
       .send({ version: ropa.body.version, decision: "VALIDATED", notes: "Aprovado pelo DPO." })
       .expect(201);
     expect(reviewed.body).toMatchObject({
@@ -759,7 +811,7 @@ describe("API Management Tax", () => {
 
     await request(app.getHttpServer())
       .post("/v1/privacy/processing-activities/review")
-      .set(headers)
+      .set(dpoHeaders)
       .send({ version: "1999-01", decision: "VALIDATED" })
       .expect(400);
 
@@ -799,6 +851,11 @@ describe("API Management Tax", () => {
       "x-synthetic-subject": "purge.admin",
       "x-synthetic-roles": "tax-admin",
     };
+    const dpoHeaders = {
+      "x-synthetic-tenant-id": "tenant-purge",
+      "x-synthetic-subject": "purge.admin",
+      "x-synthetic-roles": "privacy-officer",
+    };
     await request(app.getHttpServer())
       .post("/v1/demo/seed")
       .set(headers)
@@ -818,7 +875,7 @@ describe("API Management Tax", () => {
       .expect(200);
     await request(app.getHttpServer())
       .post("/v1/privacy/processing-activities/review")
-      .set(headers)
+      .set(dpoHeaders)
       .send({ version: ropaVersion.body.version, decision: "VALIDATED", notes: "DPO sign-off." })
       .expect(201);
 

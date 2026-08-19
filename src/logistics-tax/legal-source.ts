@@ -142,9 +142,13 @@ export function assessLegalSource(
   const effectiveFromValid = Number.isFinite(effectiveFromMs)
     ? effectiveFromMs
     : null;
-  const effectiveToMs = source.effectiveTo
+  const effectiveToRaw = source.effectiveTo
     ? new Date(source.effectiveTo).getTime()
     : null;
+  const effectiveToMs =
+    effectiveToRaw !== null && Number.isFinite(effectiveToRaw)
+      ? effectiveToRaw
+      : null;
 
   const verifiedAtMs = source.verifiedAt
     ? new Date(source.verifiedAt).getTime()
@@ -178,6 +182,8 @@ export function assessLegalSource(
 
   const warnings: string[] = [];
   if (effectiveFromValid === null) warnings.push("INVALID_EFFECTIVE_FROM_DATE");
+  if (source.effectiveTo && effectiveToMs === null)
+    warnings.push("INVALID_EFFECTIVE_TO_DATE");
   if (!source.officialUrl) warnings.push("MISSING_OFFICIAL_URL");
   if (!source.article) warnings.push("MISSING_ARTICLE_REFERENCE");
   if (source.verificationStatus === "COUNSEL_CONFIRMED" && !source.verifiedAt) {

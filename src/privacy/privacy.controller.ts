@@ -19,7 +19,7 @@ export class PrivacyController {
     return this.privacy.processingActivities(request);
   }
 
-  @RequireRoles("privacy-officer", "tax-admin")
+  @RequireRoles("privacy-officer")
   @Post("processing-activities/review")
   reviewProcessingActivities(
     @Req() request: Request,

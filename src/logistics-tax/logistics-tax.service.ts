@@ -177,25 +177,26 @@ export class LogisticsTaxService {
       };
     }
     if (resource === "complianceObligations") {
-      if (typeof input.dueDate !== "string") return {};
-      const due = new Date(input.dueDate).getTime();
-      const daysUntilDue = Math.ceil((due - now) / 86_400_000);
       const inputStatus =
         typeof input.status === "string" ? input.status : null;
-      // A terminal status (FILED / EXEMPT / NOT_APPLICABLE) means the obligation
-      // is resolved regardless of the calendar deadline.
-      const filingRisk =
+      if (
         inputStatus === "FILED" ||
         inputStatus === "EXEMPT" ||
         inputStatus === "NOT_APPLICABLE"
-          ? "RESOLVED"
-          : daysUntilDue < 0
-            ? "OVERDUE"
-            : daysUntilDue <= 15
-              ? "IMMINENT"
-              : daysUntilDue <= 45
-                ? "APPROACHING"
-                : "ON_TRACK";
+      ) {
+        return { filingRisk: "RESOLVED" };
+      }
+      if (typeof input.dueDate !== "string") return {};
+      const due = new Date(input.dueDate).getTime();
+      const daysUntilDue = Math.ceil((due - now) / 86_400_000);
+      const filingRisk =
+        daysUntilDue < 0
+          ? "OVERDUE"
+          : daysUntilDue <= 15
+            ? "IMMINENT"
+            : daysUntilDue <= 45
+              ? "APPROACHING"
+              : "ON_TRACK";
       return { daysUntilDue, filingRisk };
     }
     if (resource === "integrationConnections") {

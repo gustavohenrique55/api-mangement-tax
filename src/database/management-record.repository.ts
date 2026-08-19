@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "../generated/prisma/client";
 import { DatabaseService } from "./database.service";
 
+const PURGE_EXEMPT_RESOURCE_TYPES = new Set(["ropaApprovals"]);
+
 export type StoredRecord = Record<string, unknown> & {
   id: string;
   tenantId: string;
@@ -43,16 +45,19 @@ export class ManagementRecordRepository {
         .filter(
           (record) =>
             record.tenantId === tenantId &&
-            record.__resourceType === resourceType,
+            record.__resourceType === resourceType &&
+            !record.__erased,
         )
         .map(stripInternalResourceType);
     }
     return this.database.withTenant(tenantId, async (transaction) => {
       const records = await transaction.managementRecord.findMany({
-        where: { resourceType },
+        where: { resourceType, tenantId },
         orderBy: { createdAt: "asc" },
       });
-      return records.map((record) => record.payload as StoredRecord);
+      return records
+        .map((record) => record.payload as StoredRecord)
+        .filter((payload) => !payload.__erased);
     });
   }
 
@@ -63,8 +68,6 @@ export class ManagementRecordRepository {
     cutoffIso: string,
     apply: boolean,
   ): Promise<{ eligible: string[]; purged: number }> {
-    const PURGE_EXEMPT_RESOURCE_TYPES = new Set(["ropaApprovals"]);
-
     if (!this.database.enabled) {
       const matches = this.memory.filter(
         (record) =>
@@ -83,6 +86,7 @@ export class ManagementRecordRepository {
     return this.database.withTenant(tenantId, async (transaction) => {
       const rows = await transaction.managementRecord.findMany({
         where: {
+          tenantId,
           createdAt: { lt: new Date(cutoffIso) },
           resourceType: { notIn: [...PURGE_EXEMPT_RESOURCE_TYPES] },
         },

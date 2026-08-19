@@ -32,6 +32,7 @@ export class PrivacyService {
     const approvals = await this.records.list("ropaApprovals", tenantId);
     const latest = approvals
       .filter((approval) => approval.version === ROPA_VERSION)
+      .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1))
       .at(-1);
     return {
       version: ROPA_VERSION,
@@ -75,7 +76,7 @@ export class PrivacyService {
       notes: notes ?? null,
       createdAt: new Date().toISOString(),
     });
-    return this.processingActivities(request);
+    return await this.processingActivities(request);
   }
 
   private ropaActivities() {
