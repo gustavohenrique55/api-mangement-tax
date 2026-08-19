@@ -593,6 +593,36 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
+  /v1/privacy/processing-activities/review:
+    post:
+      summary: Aprovar ou rejeitar o registro (revisão do DPO)
+      tags: [Privacy]
+      operationId: reviewProcessingActivities
+      description: >-
+        Requer função privacy-officer ou tax-admin. Registra a decisão do DPO para a versão
+        vigente (VALIDATED/REJECTED), com approvedBy/approvedAt, e a audita.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version, decision]
+              properties:
+                version: { type: string, minLength: 1, maxLength: 20 }
+                decision: { type: string, enum: [VALIDATED, REJECTED] }
+                notes: { type: string, maxLength: 500 }
+      responses:
+        "201":
+          description: Registro atualizado com a decisão do DPO
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
   /v1/privacy/data-subjects/{subject}/export:
     get:
       summary: Exportar os dados do titular (acesso e portabilidade)

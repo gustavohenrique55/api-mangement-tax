@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { RequireRoles } from "../security/roles.decorator";
+import { ApproveRopaDto } from "./privacy.dto";
 import { PrivacyService } from "./privacy.service";
 
 @RequireRoles("tax-admin")
@@ -14,8 +15,22 @@ export class PrivacyController {
   }
 
   @Get("processing-activities")
-  processingActivities() {
-    return this.privacy.processingActivities();
+  processingActivities(@Req() request: Request) {
+    return this.privacy.processingActivities(request);
+  }
+
+  @RequireRoles("privacy-officer", "tax-admin")
+  @Post("processing-activities/review")
+  reviewProcessingActivities(
+    @Req() request: Request,
+    @Body() body: ApproveRopaDto,
+  ) {
+    return this.privacy.reviewProcessingActivities(
+      request,
+      body.version,
+      body.decision,
+      body.notes,
+    );
   }
 
   @Get("data-subjects/:subject/export")

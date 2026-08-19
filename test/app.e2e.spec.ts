@@ -658,6 +658,28 @@ describe("API Management Tax", () => {
       ),
     ).toBe(true);
 
+    const reviewed = await request(app.getHttpServer())
+      .post("/v1/privacy/processing-activities/review")
+      .set(headers)
+      .send({ version: ropa.body.version, decision: "VALIDATED", notes: "Aprovado pelo DPO." })
+      .expect(201);
+    expect(reviewed.body).toMatchObject({
+      legalValidationStatus: "VALIDATED",
+      approvedBy: "operator-x",
+    });
+
+    const afterReview = await request(app.getHttpServer())
+      .get("/v1/privacy/processing-activities")
+      .set(headers)
+      .expect(200);
+    expect(afterReview.body.legalValidationStatus).toBe("VALIDATED");
+
+    await request(app.getHttpServer())
+      .post("/v1/privacy/processing-activities/review")
+      .set(headers)
+      .send({ version: "1999-01", decision: "VALIDATED" })
+      .expect(400);
+
     const exported = await request(app.getHttpServer())
       .get("/v1/privacy/data-subjects/operator-x/export")
       .set(headers)

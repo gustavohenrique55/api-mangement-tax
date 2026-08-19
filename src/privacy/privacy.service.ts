@@ -1,7 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
+import { randomUUID } from "node:crypto";
 import type { Request } from "express";
 import { AuditService } from "../audit/audit.service";
 import { ManagementRecordRepository } from "../database/management-record.repository";
+
+const ROPA_VERSION = "2026-08";
 
 @Injectable()
 export class PrivacyService {
@@ -22,50 +25,99 @@ export class PrivacyService {
 
   // Registro de Operações de Tratamento (ROPA) / base para RIPD.
   // Conteúdo é modelo técnico e requer validação do DPO/jurídico.
-  processingActivities() {
+  async processingActivities(request: Request) {
+    const tenantId = request.actor!.tenantId;
+    const approvals = await this.records.list("ropaApprovals", tenantId);
+    const latest = approvals
+      .filter((approval) => approval.version === ROPA_VERSION)
+      .at(-1);
     return {
-      version: "2026-08",
-      legalValidationStatus: "PENDING_DPO_REVIEW",
+      version: ROPA_VERSION,
+      legalValidationStatus:
+        (latest?.decision as string | undefined) ?? "PENDING_DPO_REVIEW",
+      approvedBy: (latest?.approvedBy as string | undefined) ?? null,
+      approvedAt: (latest?.approvedAt as string | undefined) ?? null,
+      reviewNotes: (latest?.notes as string | undefined) ?? null,
       disclaimer:
         "Modelo técnico versionado; a base legal, salvaguardas e transferências internacionais devem ser validadas pelo DPO/jurídico.",
-      activities: [
-        {
-          id: "audit-trail",
-          purpose: "Registro imutável de operações para auditoria e compliance",
-          dataCategories: ["identificador do operador", "metadados da ação"],
-          legalBasis: "LGPD art. 7º, II — cumprimento de obrigação legal/regulatória",
-          retentionDays: Number(process.env.AUDIT_RETENTION_DAYS ?? 3650),
-          internationalTransfer: {
-            occurs: false,
-            safeguards: null,
-          },
-        },
-        {
-          id: "operator-identity",
-          purpose: "Autenticação e autorização de operadores (RBAC e escopos)",
-          dataCategories: ["identificador do operador", "papéis", "escopos de país"],
-          legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
-          retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
-          internationalTransfer: {
-            occurs: false,
-            safeguards: null,
-          },
-        },
-        {
-          id: "multijurisdiction-governance",
-          purpose:
-            "Governança tributária multi-jurisdicional (LATAM e Caribe)",
-          dataCategories: ["dados gerenciais tributários", "país/jurisdição"],
-          legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
-          retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
-          internationalTransfer: {
-            occurs: true,
-            mechanism: "LGPD art. 33, VIII — cláusulas contratuais padrão",
-            note: "Transferência entre jurisdições LATAM/Caribe sujeita a avaliação de adequação e salvaguardas contratuais.",
-          },
-        },
-      ],
+      activities: this.ropaActivities(),
     };
+  }
+
+  async reviewProcessingActivities(
+    request: Request,
+    version: string,
+    decision: "VALIDATED" | "REJECTED",
+    notes?: string,
+  ) {
+    if (version !== ROPA_VERSION) {
+      throw new BadRequestException(
+        `ROPA version mismatch; the current version is ${ROPA_VERSION}`,
+      );
+    }
+    const tenantId = request.actor!.tenantId;
+    await this.records.create("ropaApprovals", {
+      id: randomUUID(),
+      tenantId,
+      version,
+      decision,
+      approvedBy: request.actor!.subject,
+      approvedAt: new Date().toISOString(),
+      notes: notes ?? null,
+      createdAt: new Date().toISOString(),
+    });
+    await this.audit.append(
+      request,
+      "ropa.reviewed",
+      "processing-activities",
+      version,
+      { decision },
+    );
+    return this.processingActivities(request);
+  }
+
+  private ropaActivities() {
+    return [
+      {
+        id: "audit-trail",
+        purpose: "Registro imutável de operações para auditoria e compliance",
+        dataCategories: ["identificador do operador", "metadados da ação"],
+        legalBasis:
+          "LGPD art. 7º, II — cumprimento de obrigação legal/regulatória",
+        retentionDays: Number(process.env.AUDIT_RETENTION_DAYS ?? 3650),
+        internationalTransfer: {
+          occurs: false,
+          safeguards: null,
+        },
+      },
+      {
+        id: "operator-identity",
+        purpose: "Autenticação e autorização de operadores (RBAC e escopos)",
+        dataCategories: [
+          "identificador do operador",
+          "papéis",
+          "escopos de país",
+        ],
+        legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
+        retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
+        internationalTransfer: {
+          occurs: false,
+          safeguards: null,
+        },
+      },
+      {
+        id: "multijurisdiction-governance",
+        purpose: "Governança tributária multi-jurisdicional (LATAM e Caribe)",
+        dataCategories: ["dados gerenciais tributários", "país/jurisdição"],
+        legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
+        retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
+        internationalTransfer: {
+          occurs: true,
+          mechanism: "LGPD art. 33, VIII — cláusulas contratuais padrão",
+          note: "Transferência entre jurisdições LATAM/Caribe sujeita a avaliação de adequação e salvaguardas contratuais.",
+        },
+      },
+    ];
   }
 
   async exportSubject(request: Request, subject: string) {
