@@ -682,6 +682,76 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+  /v1/system/tenants:
+    post:
+      summary: Provisionar um tenant (job de sistema)
+      tags: [System]
+      operationId: provisionTenant
+      security: []
+      description: >-
+        Autenticado por token de serviço (x-service-token). Cria o tenant explicitamente
+        (idempotente) e registra em auditoria, em vez do upsert implícito no primeiro acesso.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [tenantId, displayName]
+              properties:
+                tenantId: { type: string, minLength: 1, maxLength: 200 }
+                displayName: { type: string, minLength: 2, maxLength: 160 }
+      responses:
+        "201":
+          description: Tenant criado ou já existente
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503":
+          description: Token de serviço não configurado
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+  /v1/system/users:
+    post:
+      summary: Provisionar um usuário no IdP (Keycloak)
+      tags: [System]
+      operationId: provisionUser
+      security: []
+      description: >-
+        Autenticado por token de serviço (x-service-token). Cria o usuário no Keycloak
+        (atributos tenant_id/country_scopes e papéis), sem armazenar credenciais na API.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, email, tenantId]
+              properties:
+                username: { type: string, minLength: 1, maxLength: 200 }
+                email: { type: string, format: email }
+                tenantId: { type: string, minLength: 1, maxLength: 200 }
+                roles: { type: array, items: { type: string } }
+                countryScopes: { type: array, items: { type: string } }
+                temporaryPassword: { type: string, minLength: 8, maxLength: 200 }
+      responses:
+        "201":
+          description: Usuário criado no IdP
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503":
+          description: Integração com o Keycloak não configurada
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 components:
   securitySchemes:
     bearerAuth:

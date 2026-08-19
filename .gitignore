@@ -9,6 +9,7 @@ src/generated/prisma/
 *.log
 .idea/
 .vscode/
+.claude/
 .DS_Store
 Thumbs.db
 prisma/*.db

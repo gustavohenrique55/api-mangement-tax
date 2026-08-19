@@ -18,7 +18,7 @@ describe("API Management Tax", () => {
     process.env.AUTH_MODE = "synthetic";
     process.env.PERSISTENCE_MODE = "memory";
     process.env.COMPANY_DISPLAY_NAME = "Empresa Confidencial";
-    process.env.RETENTION_JOB_TOKEN = "test-service-token";
+    process.env.SERVICE_TOKEN = "test-service-token";
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -742,5 +742,56 @@ describe("API Management Tax", () => {
       mode: "DRY_RUN",
       tenantId: "tenant-job",
     });
+  });
+
+  it("provisions a tenant via the token-guarded system endpoint", async () => {
+    const tenantId = "22222222-2222-2222-2222-222222222222";
+
+    await request(app.getHttpServer())
+      .post("/v1/system/tenants")
+      .send({ tenantId, displayName: "Tenant Sintético" })
+      .expect(401);
+
+    const created = await request(app.getHttpServer())
+      .post("/v1/system/tenants")
+      .set("x-service-token", "test-service-token")
+      .send({ tenantId, displayName: "Tenant Sintético" })
+      .expect(201);
+    expect(created.body).toMatchObject({ tenantId, status: "CREATED" });
+
+    const again = await request(app.getHttpServer())
+      .post("/v1/system/tenants")
+      .set("x-service-token", "test-service-token")
+      .send({ tenantId, displayName: "Tenant Sintético" })
+      .expect(201);
+    expect(again.body).toMatchObject({ status: "ALREADY_EXISTS" });
+
+    await request(app.getHttpServer())
+      .post("/v1/system/tenants")
+      .set("x-service-token", "test-service-token")
+      .send({ displayName: "sem tenantId" })
+      .expect(400);
+  });
+
+  it("guards user provisioning and reports when the IdP is not configured", async () => {
+    const body = {
+      username: "novo.operador",
+      email: "novo.operador@example.local",
+      tenantId: "22222222-2222-2222-2222-222222222222",
+      roles: ["tax-viewer"],
+      countryScopes: ["BR"],
+    };
+
+    await request(app.getHttpServer())
+      .post("/v1/system/users")
+      .send(body)
+      .expect(401);
+
+    // Keycloak admin is not configured in this suite -> graceful 503.
+    await request(app.getHttpServer())
+      .post("/v1/system/users")
+      .set("x-service-token", "test-service-token")
+      .send(body)
+      .expect(503);
   });
 });

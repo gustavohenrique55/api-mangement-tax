@@ -17,8 +17,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
@@ -68,8 +66,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
@@ -86,3 +82,55 @@ jobs:
 
       - name: Row-level security integration test
         run: pnpm test:rls
+
+  oidc-integration:
+    name: OIDC integration (Keycloak)
+    runs-on: ubuntu-latest
+    env:
+      KEYCLOAK_URL: http://localhost:8080
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm prisma:generate
+
+      # The realm JSON is bind-mounted from the checkout, so Keycloak has to
+      # start as a step (a `services:` container would boot before checkout).
+      - name: Start Keycloak with the dev realm
+        run: docker compose --profile idp up -d keycloak
+
+      # `--wait` is not enough: the compose service declares no healthcheck and
+      # the realm import finishes well after the container reports "running".
+      - name: Wait for the realm import to finish
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS "$KEYCLOAK_URL/realms/management-tax/.well-known/openid-configuration" >/dev/null; then
+              echo "Realm management-tax ready after $attempt attempt(s)."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Keycloak realm did not become ready within 120s."
+          exit 1
+
+      - name: OIDC integration test
+        run: pnpm test:oidc
+
+      - name: Keycloak logs
+        if: failure()
+        run: docker compose --profile idp logs --no-color keycloak
+
+      # No `--volumes`: it would also drop the postgres_data volume declared in
+      # the same compose file.
+      - name: Tear down Keycloak
+        if: always()
+        run: docker compose --profile idp down
