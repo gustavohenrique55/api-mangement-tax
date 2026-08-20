@@ -11,7 +11,7 @@ import { ProblemDetailsFilter } from "../src/platform/problem-details.filter";
 describe("JWT authentication", () => {
   let app: INestApplication;
   let jwksServer: Server;
-  let privateKey: CryptoKey;
+  let privateKey: Awaited<ReturnType<typeof import("jose").generateKeyPair>>["privateKey"];
   const issuer = "https://test-idp.local/";
   const audience = "api-management-tax";
 

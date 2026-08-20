@@ -1,7 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
+import { randomUUID } from "node:crypto";
 import type { Request } from "express";
 import { AuditService } from "../audit/audit.service";
 import { ManagementRecordRepository } from "../database/management-record.repository";
+
+const ROPA_VERSION = "2026-08";
 
 @Injectable()
 export class PrivacyService {
@@ -17,55 +20,115 @@ export class PrivacyService {
       auditImmutable: true,
       legalBasis:
         "LGPD art. 16 — a trilha de auditoria é retida por obrigação legal/regulatória e é imutável",
+      legalBasisGdpr:
+        "GDPR art. 17(3)(b) e (e) — retenção para cumprimento de obrigação legal e exercício/defesa de direitos; aplicável a titulares vinculados a territórios da UE (Guadalupe, Martinica, Guiana Francesa)",
     };
   }
 
   // Registro de Operações de Tratamento (ROPA) / base para RIPD.
   // Conteúdo é modelo técnico e requer validação do DPO/jurídico.
-  processingActivities() {
+  async processingActivities(request: Request) {
+    const tenantId = request.actor!.tenantId;
+    const approvals = await this.records.list("ropaApprovals", tenantId);
+    const latest = approvals
+      .filter((approval) => approval.version === ROPA_VERSION)
+      .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1))
+      .at(-1);
     return {
-      version: "2026-08",
-      legalValidationStatus: "PENDING_DPO_REVIEW",
+      version: ROPA_VERSION,
+      legalValidationStatus:
+        (latest?.decision as string | undefined) ?? "PENDING_DPO_REVIEW",
+      approvedBy: (latest?.approvedBy as string | undefined) ?? null,
+      approvedAt: (latest?.approvedAt as string | undefined) ?? null,
+      reviewNotes: (latest?.notes as string | undefined) ?? null,
       disclaimer:
-        "Modelo técnico versionado; a base legal, salvaguardas e transferências internacionais devem ser validadas pelo DPO/jurídico.",
-      activities: [
-        {
-          id: "audit-trail",
-          purpose: "Registro imutável de operações para auditoria e compliance",
-          dataCategories: ["identificador do operador", "metadados da ação"],
-          legalBasis: "LGPD art. 7º, II — cumprimento de obrigação legal/regulatória",
-          retentionDays: Number(process.env.AUDIT_RETENTION_DAYS ?? 3650),
-          internationalTransfer: {
-            occurs: false,
-            safeguards: null,
-          },
-        },
-        {
-          id: "operator-identity",
-          purpose: "Autenticação e autorização de operadores (RBAC e escopos)",
-          dataCategories: ["identificador do operador", "papéis", "escopos de país"],
-          legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
-          retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
-          internationalTransfer: {
-            occurs: false,
-            safeguards: null,
-          },
-        },
-        {
-          id: "multijurisdiction-governance",
-          purpose:
-            "Governança tributária multi-jurisdicional (LATAM e Caribe)",
-          dataCategories: ["dados gerenciais tributários", "país/jurisdição"],
-          legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
-          retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
-          internationalTransfer: {
-            occurs: true,
-            mechanism: "LGPD art. 33, VIII — cláusulas contratuais padrão",
-            note: "Transferência entre jurisdições LATAM/Caribe sujeita a avaliação de adequação e salvaguardas contratuais.",
-          },
-        },
-      ],
+        "Modelo técnico versionado; a base legal, salvaguardas e transferências internacionais devem ser validadas pelo DPO/jurídico. Para titulares vinculados a territórios da UE (Guadalupe, Martinica, Guiana Francesa) e a demais jurisdições com legislação própria de proteção de dados, aplicam-se o GDPR e as leis locais em conjunto com a LGPD.",
+      activities: this.ropaActivities(),
     };
+  }
+
+  async reviewProcessingActivities(
+    request: Request,
+    version: string,
+    decision: "VALIDATED" | "REJECTED",
+    notes?: string,
+  ) {
+    if (version !== ROPA_VERSION) {
+      throw new BadRequestException(
+        `ROPA version mismatch; the current version is ${ROPA_VERSION}`,
+      );
+    }
+    const tenantId = request.actor!.tenantId;
+    await this.audit.append(
+      request,
+      "ropa.reviewed",
+      "processing-activities",
+      version,
+      { decision },
+    );
+    await this.records.create("ropaApprovals", {
+      id: randomUUID(),
+      tenantId,
+      version,
+      decision,
+      approvedBy: request.actor!.subject,
+      approvedAt: new Date().toISOString(),
+      notes: notes ?? null,
+      createdAt: new Date().toISOString(),
+    });
+    return await this.processingActivities(request);
+  }
+
+  private ropaActivities() {
+    return [
+      {
+        id: "audit-trail",
+        purpose: "Registro imutável de operações para auditoria e compliance",
+        dataCategories: ["identificador do operador", "metadados da ação"],
+        legalBasis:
+          "LGPD art. 7º, II — cumprimento de obrigação legal/regulatória",
+        legalBasisGdpr:
+          "GDPR art. 6(1)(c) — cumprimento de obrigação legal",
+        retentionDays: Number(process.env.AUDIT_RETENTION_DAYS ?? 3650),
+        internationalTransfer: {
+          occurs: false,
+          safeguards: null,
+        },
+      },
+      {
+        id: "operator-identity",
+        purpose: "Autenticação e autorização de operadores (RBAC e escopos)",
+        dataCategories: [
+          "identificador do operador",
+          "papéis",
+          "escopos de país",
+        ],
+        legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
+        legalBasisGdpr:
+          "GDPR art. 6(1)(f) — legítimo interesse do controlador",
+        retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
+        internationalTransfer: {
+          occurs: false,
+          safeguards: null,
+        },
+      },
+      {
+        id: "multijurisdiction-governance",
+        purpose: "Governança tributária multi-jurisdicional (LATAM e Caribe)",
+        dataCategories: ["dados gerenciais tributários", "país/jurisdição"],
+        legalBasis: "LGPD art. 7º, IX — legítimo interesse do controlador",
+        legalBasisGdpr:
+          "GDPR art. 6(1)(f) — legítimo interesse do controlador",
+        retentionDays: Number(process.env.DATA_RETENTION_DAYS ?? 3650),
+        internationalTransfer: {
+          occurs: true,
+          mechanism: "LGPD art. 33, VIII — cláusulas contratuais padrão",
+          mechanismGdpr:
+            "GDPR arts. 44-46 (Capítulo V) — cláusulas contratuais padrão (art. 46(2)(c)) ou decisão de adequação; aplicável a transferências que envolvam territórios da UE (Guadalupe, Martinica, Guiana Francesa)",
+          note: "Transferência entre jurisdições LATAM/Caribe sujeita a avaliação de adequação e salvaguardas contratuais. Transferências de/para territórios da UE exigem base do Capítulo V do GDPR.",
+        },
+      },
+    ];
   }
 
   async exportSubject(request: Request, subject: string) {
@@ -82,9 +145,14 @@ export class PrivacyService {
   async eraseSubject(request: Request, subject: string) {
     const tenantId = request.actor!.tenantId;
     const events = await this.audit.list(tenantId);
-    const retained = events.filter(
+    const preCount = events.filter(
       (event) => event.actorSubject === subject,
     ).length;
+    // The erasure event itself is written with actorSubject = request.actor.subject.
+    // When the requesting actor IS the subject being erased (self-erasure), that new
+    // event is retained for this subject too — include it in the compliance count.
+    const selfErasure = request.actor!.subject === subject;
+    const retained = preCount + (selfErasure ? 1 : 0);
     const record = await this.audit.append(
       request,
       "privacy.erasure-executed",
@@ -107,6 +175,8 @@ export class PrivacyService {
         auditEvents: retained,
         legalBasis:
           "LGPD art. 16 — retenção obrigatória; a trilha de auditoria permanece imutável.",
+        legalBasisGdpr:
+          "GDPR art. 17(3)(b) e (e) — o direito ao apagamento não se aplica à retenção necessária para obrigação legal e para defesa de direitos.",
       },
     };
   }
