@@ -145,9 +145,14 @@ export class PrivacyService {
   async eraseSubject(request: Request, subject: string) {
     const tenantId = request.actor!.tenantId;
     const events = await this.audit.list(tenantId);
-    const retained = events.filter(
+    const preCount = events.filter(
       (event) => event.actorSubject === subject,
     ).length;
+    // The erasure event itself is written with actorSubject = request.actor.subject.
+    // When the requesting actor IS the subject being erased (self-erasure), that new
+    // event is retained for this subject too — include it in the compliance count.
+    const selfErasure = request.actor!.subject === subject;
+    const retained = preCount + (selfErasure ? 1 : 0);
     const record = await this.audit.append(
       request,
       "privacy.erasure-executed",

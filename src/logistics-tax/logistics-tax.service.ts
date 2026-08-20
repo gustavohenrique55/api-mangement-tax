@@ -114,9 +114,15 @@ export class LogisticsTaxService {
       record.originCountryCode,
       record.destinationCountryCode,
     ].filter((value): value is string => typeof value === "string");
+    // Read uses .some(): a record is visible when ANY of its country codes is in the
+    // actor's scope. A BR-scoped manager sees a BR→MX lane because Brazil is their
+    // jurisdiction. This is intentionally more permissive than the CountryScopeGuard
+    // write policy (.every() / notIn check), which prevents creating records that span
+    // countries outside the actor's full control. The asymmetry is by design:
+    // tax-admin creates cross-border records; scoped actors read what touches their territory.
     return (
       recordCountries.length === 0 ||
-      recordCountries.every((code) => scopes.includes(code))
+      recordCountries.some((code) => scopes.includes(code))
     );
   }
 
@@ -223,7 +229,16 @@ export class LogisticsTaxService {
       return { daysUntilDue, filingRisk };
     }
     if (resource === "integrationConnections") {
-      return { credentialsStored: false };
+      // Read the persisted value rather than hardcoding false. At creation time this
+      // defaults to false (the DTO has no credentialsStored field, so nothing is
+      // stored). When a credential-provisioning update endpoint is added that writes
+      // credentialsStored: true into the payload, this read will surface it correctly.
+      // Do NOT restore a literal false here — that would silently mask stored state.
+      const persisted =
+        typeof input.credentialsStored === "boolean"
+          ? input.credentialsStored
+          : false;
+      return { credentialsStored: persisted };
     }
     return {};
   }

@@ -869,6 +869,10 @@ describe("API Management Tax", () => {
       ),
     ).toBe(true);
 
+    // Self-erasure: the requesting actor IS the subject being erased.
+    // The new erasure event has actorSubject = "operator-x", so it is itself retained.
+    // The reported count must include it — exactly (pre-erasure count + 1).
+    const preErasureCount = exported.body.auditTrail.length;
     const erasure = await request(app.getHttpServer())
       .post("/v1/privacy/data-subjects/operator-x/erasure")
       .set(headers)
@@ -877,9 +881,9 @@ describe("API Management Tax", () => {
       subject: "operator-x",
       status: "COMPLETED",
     });
-    expect(
-      erasure.body.retainedForLegalObligation.auditEvents,
-    ).toBeGreaterThanOrEqual(1);
+    expect(erasure.body.retainedForLegalObligation.auditEvents).toBe(
+      preErasureCount + 1,
+    );
 
     await request(app.getHttpServer())
       .get("/v1/privacy/retention-policy")
@@ -1031,6 +1035,74 @@ describe("API Management Tax", () => {
       .set("x-service-token", "test-service-token")
       .send(body)
       .expect(503);
+  });
+
+  it("country-scoped actor sees cross-border lane when any country code matches their scope", async () => {
+    // tax-admin creates a BR→MX lane (bypasses CountryScopeGuard on write).
+    const adminHeaders = {
+      "x-synthetic-tenant-id": "tenant-scope-lanes",
+      "x-synthetic-subject": "admin",
+      "x-synthetic-roles": "tax-admin",
+    };
+    await request(app.getHttpServer())
+      .post("/v1/logistics-lanes")
+      .set(adminHeaders)
+      .send({
+        originCountryCode: "BR",
+        destinationCountryCode: "MX",
+        transportMode: "ROAD",
+        currency: "USD",
+        status: "ACTIVE",
+      })
+      .expect(201);
+
+    // BR-scoped actor must see the lane because BR is their jurisdiction (.some() semantics).
+    // Before the fix (.every()), this returned an empty list because MX was not in scope.
+    const brScoped = {
+      "x-synthetic-tenant-id": "tenant-scope-lanes",
+      "x-synthetic-subject": "br-manager",
+      "x-synthetic-roles": "country-manager",
+      "x-synthetic-country-scopes": "BR",
+    };
+    const brLanes = await request(app.getHttpServer())
+      .get("/v1/logistics-lanes")
+      .set(brScoped)
+      .expect(200);
+    expect(
+      brLanes.body.data.some(
+        (lane: { originCountryCode: string }) => lane.originCountryCode === "BR",
+      ),
+    ).toBe(true);
+
+    // MX-only scoped actor must also see the lane for the same reason.
+    const mxScoped = {
+      "x-synthetic-tenant-id": "tenant-scope-lanes",
+      "x-synthetic-subject": "mx-manager",
+      "x-synthetic-roles": "country-manager",
+      "x-synthetic-country-scopes": "MX",
+    };
+    const mxLanes = await request(app.getHttpServer())
+      .get("/v1/logistics-lanes")
+      .set(mxScoped)
+      .expect(200);
+    expect(
+      mxLanes.body.data.some(
+        (lane: { destinationCountryCode: string }) => lane.destinationCountryCode === "MX",
+      ),
+    ).toBe(true);
+
+    // An unrelated scope (AR) must NOT see the BR→MX lane.
+    const arScoped = {
+      "x-synthetic-tenant-id": "tenant-scope-lanes",
+      "x-synthetic-subject": "ar-manager",
+      "x-synthetic-roles": "country-manager",
+      "x-synthetic-country-scopes": "AR",
+    };
+    const arLanes = await request(app.getHttpServer())
+      .get("/v1/logistics-lanes")
+      .set(arScoped)
+      .expect(200);
+    expect(arLanes.body.data).toHaveLength(0);
   });
 
   it("repository.create() strips __erased so a pre-tombstoned payload is always visible", async () => {
