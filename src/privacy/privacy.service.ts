@@ -204,7 +204,9 @@ export class PrivacyService {
       tenantId,
       apply,
     );
-    if (apply && result.purged > 0) {
+    // Always audit apply=true calls, even when purged=0: the intent to execute
+    // the purge must be traceable regardless of how many records were eligible.
+    if (apply) {
       await this.audit.appendSystem(
         tenantId,
         "privacy.retention-purge",

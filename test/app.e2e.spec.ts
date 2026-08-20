@@ -869,13 +869,20 @@ describe("API Management Tax", () => {
       ),
     ).toBe(true);
 
-    // Self-erasure: the requesting actor IS the subject being erased.
-    // The new erasure event has actorSubject = "operator-x", so it is itself retained.
-    // The reported count must include it — exactly (pre-erasure count + 1).
+    // tax-admin must be denied: data subject erasure requires privacy-officer.
     const preErasureCount = exported.body.auditTrail.length;
-    const erasure = await request(app.getHttpServer())
+    await request(app.getHttpServer())
       .post("/v1/privacy/data-subjects/operator-x/erasure")
       .set(headers)
+      .expect(403);
+
+    // Self-erasure: the requesting actor IS the subject being erased (dpoHeaders also
+    // carries subject = "operator-x"). The new erasure event has actorSubject = "operator-x",
+    // so it is itself retained. The reported count must include it — exactly preCount + 1.
+    // The 403 above left no audit event, so preErasureCount is still accurate.
+    const erasure = await request(app.getHttpServer())
+      .post("/v1/privacy/data-subjects/operator-x/erasure")
+      .set(dpoHeaders)
       .expect(201);
     expect(erasure.body).toMatchObject({
       subject: "operator-x",
@@ -990,6 +997,38 @@ describe("API Management Tax", () => {
       mode: "DRY_RUN",
       tenantId: "tenant-job",
     });
+  });
+
+  it("system retention apply=true always writes audit event attributed to system:retention-job", async () => {
+    // Before the fix, purgeForTenant only called appendSystem when purged > 0.
+    // A call with apply=true but 0 eligible records left no trace in the audit trail —
+    // an attacker with the service token could probe the system silently.
+    // After the fix, every apply=true call produces an audit event regardless of purged count.
+    const tenantId = "tenant-system-audit";
+    const headers = {
+      "x-synthetic-tenant-id": tenantId,
+      "x-synthetic-subject": "audit-checker",
+      "x-synthetic-roles": "tax-admin",
+    };
+
+    const result = await request(app.getHttpServer())
+      .post(`/v1/system/retention/run?tenantId=${tenantId}&apply=true`)
+      .set("x-service-token", "test-service-token")
+      .expect(201);
+    expect(result.body).toMatchObject({ mode: "APPLIED", purged: 0 });
+
+    // The system actor must appear in the audit trail even though zero records were purged.
+    const exported = await request(app.getHttpServer())
+      .get(`/v1/privacy/data-subjects/system:retention-job/export`)
+      .set(headers)
+      .expect(200);
+    expect(exported.body.auditTrail.length).toBeGreaterThanOrEqual(1);
+    expect(
+      exported.body.auditTrail.every(
+        (event: { actorSubject: string }) =>
+          event.actorSubject === "system:retention-job",
+      ),
+    ).toBe(true);
   });
 
   it("provisions a tenant via the token-guarded system endpoint", async () => {

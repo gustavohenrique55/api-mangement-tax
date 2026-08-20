@@ -38,6 +38,7 @@ export class PrivacyController {
     return this.privacy.exportSubject(request, subject);
   }
 
+  @RequireRoles("privacy-officer")
   @Post("data-subjects/:subject/erasure")
   eraseSubject(@Req() request: Request, @Param("subject") subject: string) {
     return this.privacy.eraseSubject(request, subject);
