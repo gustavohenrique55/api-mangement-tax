@@ -33,6 +33,7 @@ export class PrivacyController {
     );
   }
 
+  @RequireRoles("privacy-officer")
   @Get("data-subjects/:subject/export")
   exportSubject(@Req() request: Request, @Param("subject") subject: string) {
     return this.privacy.exportSubject(request, subject);

@@ -857,9 +857,15 @@ describe("API Management Tax", () => {
       .send({ version: "1999-01", decision: "VALIDATED" })
       .expect(400);
 
-    const exported = await request(app.getHttpServer())
+    // tax-admin must be denied: data subject export requires privacy-officer.
+    await request(app.getHttpServer())
       .get("/v1/privacy/data-subjects/operator-x/export")
       .set(headers)
+      .expect(403);
+
+    const exported = await request(app.getHttpServer())
+      .get("/v1/privacy/data-subjects/operator-x/export")
+      .set(dpoHeaders)
       .expect(200);
     expect(exported.body.auditTrail.length).toBeGreaterThanOrEqual(1);
     expect(
@@ -989,6 +995,13 @@ describe("API Management Tax", () => {
       .set("x-service-token", "test-service-token")
       .expect(400);
 
+    // Whitespace-only tenantId (%20 = space) must be rejected — before the fix,
+    // `!" "` was falsy-false and the blank tenantId reached purgeForTenant.
+    await request(app.getHttpServer())
+      .post("/v1/system/retention/run?tenantId=%20&apply=true")
+      .set("x-service-token", "test-service-token")
+      .expect(400);
+
     const report = await request(app.getHttpServer())
       .post("/v1/system/retention/run?tenantId=tenant-job")
       .set("x-service-token", "test-service-token")
@@ -1005,10 +1018,11 @@ describe("API Management Tax", () => {
     // an attacker with the service token could probe the system silently.
     // After the fix, every apply=true call produces an audit event regardless of purged count.
     const tenantId = "tenant-system-audit";
-    const headers = {
+    // exportSubject now requires privacy-officer.
+    const dpoHeaders = {
       "x-synthetic-tenant-id": tenantId,
       "x-synthetic-subject": "audit-checker",
-      "x-synthetic-roles": "tax-admin",
+      "x-synthetic-roles": "privacy-officer",
     };
 
     const result = await request(app.getHttpServer())
@@ -1020,13 +1034,44 @@ describe("API Management Tax", () => {
     // The system actor must appear in the audit trail even though zero records were purged.
     const exported = await request(app.getHttpServer())
       .get(`/v1/privacy/data-subjects/system:retention-job/export`)
-      .set(headers)
+      .set(dpoHeaders)
       .expect(200);
     expect(exported.body.auditTrail.length).toBeGreaterThanOrEqual(1);
     expect(
       exported.body.auditTrail.every(
         (event: { actorSubject: string }) =>
           event.actorSubject === "system:retention-job",
+      ),
+    ).toBe(true);
+  });
+
+  it("purgeByRetention always writes audit event on apply=true, even when purged=0", async () => {
+    // Before the fix, purgeByRetention guarded its audit.append() with
+    // `if (apply && result.purged > 0)`. A DPO calling apply=true against a
+    // tenant with no eligible records would produce no audit event — their
+    // intent to execute the purge was untraceable. purgeForTenant (system path)
+    // was already fixed to always audit; this test proves the human path matches.
+    const dpoHeaders = {
+      "x-synthetic-tenant-id": "tenant-purge-audit-gap",
+      "x-synthetic-subject": "dpo.officer",
+      "x-synthetic-roles": "privacy-officer",
+    };
+
+    // Fresh tenant — no records past the cutoff, so purged=0.
+    const result = await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge?apply=true")
+      .set(dpoHeaders)
+      .expect(201);
+    expect(result.body).toMatchObject({ mode: "APPLIED", purged: 0 });
+
+    // After fix: the audit trail for the DPO actor must contain the retention-purge event.
+    const exported = await request(app.getHttpServer())
+      .get("/v1/privacy/data-subjects/dpo.officer/export")
+      .set(dpoHeaders)
+      .expect(200);
+    expect(
+      exported.body.auditTrail.some(
+        (event: { action: string }) => event.action === "privacy.retention-purge",
       ),
     ).toBe(true);
   });

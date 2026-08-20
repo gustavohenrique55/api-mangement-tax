@@ -27,7 +27,8 @@ export class RetentionController {
     @Query("tenantId") tenantId?: string,
     @Query("apply") apply?: string,
   ) {
-    if (!tenantId) throw new BadRequestException("tenantId is required");
-    return this.privacy.purgeForTenant(tenantId, apply === "true");
+    const tid = tenantId?.trim();
+    if (!tid) throw new BadRequestException("tenantId is required");
+    return this.privacy.purgeForTenant(tid, apply === "true");
   }
 }
