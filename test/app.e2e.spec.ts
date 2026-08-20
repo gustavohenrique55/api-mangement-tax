@@ -907,9 +907,15 @@ describe("API Management Tax", () => {
       .set(headers)
       .expect(201);
 
-    const dryRun = await request(app.getHttpServer())
+    // tax-admin must be denied: irreversible data erasure requires privacy-officer.
+    await request(app.getHttpServer())
       .post("/v1/privacy/retention/purge")
       .set(headers)
+      .expect(403);
+
+    const dryRun = await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge")
+      .set(dpoHeaders)
       .expect(201);
     expect(dryRun.body).toMatchObject({ mode: "DRY_RUN", purged: 0 });
     expect(dryRun.body.eligible).toBe(0);
@@ -929,7 +935,7 @@ describe("API Management Tax", () => {
     try {
       const applied = await request(app.getHttpServer())
         .post("/v1/privacy/retention/purge?apply=true")
-        .set(headers)
+        .set(dpoHeaders)
         .expect(201);
       expect(applied.body.mode).toBe("APPLIED");
       expect(applied.body.purged).toBeGreaterThanOrEqual(1);
@@ -953,7 +959,7 @@ describe("API Management Tax", () => {
       // must be excluded from the eligible set).
       const secondPurge = await request(app.getHttpServer())
         .post("/v1/privacy/retention/purge?apply=true")
-        .set(headers)
+        .set(dpoHeaders)
         .expect(201);
       expect(secondPurge.body.purged).toBe(0);
     } finally {

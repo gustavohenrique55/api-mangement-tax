@@ -43,6 +43,7 @@ export class PrivacyController {
     return this.privacy.eraseSubject(request, subject);
   }
 
+  @RequireRoles("privacy-officer")
   @Post("retention/purge")
   purgeByRetention(
     @Req() request: Request,

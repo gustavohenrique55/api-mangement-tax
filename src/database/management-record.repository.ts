@@ -106,20 +106,19 @@ export class ManagementRecordRepository {
       const eligible = rows
         .filter((row) => !(row.payload as Record<string, unknown>).__erased)
         .map((row) => row.id);
-      if (apply) {
-        for (const id of eligible) {
-          await transaction.managementRecord.update({
-            where: { id },
-            data: {
-              payload: {
-                id,
-                tenantId,
-                __erased: true,
-                erasedAt: new Date().toISOString(),
-              } as Prisma.InputJsonValue,
-            },
-          });
-        }
+      if (apply && eligible.length > 0) {
+        // Single batch update instead of one UPDATE per record; the id column on the
+        // table row already identifies each record — no need to repeat it in the payload.
+        await transaction.managementRecord.updateMany({
+          where: { id: { in: eligible } },
+          data: {
+            payload: {
+              tenantId,
+              __erased: true,
+              erasedAt: new Date().toISOString(),
+            } as Prisma.InputJsonValue,
+          },
+        });
       }
       return { eligible, purged: apply ? eligible.length : 0 };
     });
