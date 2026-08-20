@@ -37,7 +37,7 @@ export class LogisticsTaxService {
         ),
       )
       .map((record) =>
-        this.withLegalSourceAssessment({ ...record } as DomainRecord, now),
+        this.withReadTimeFields(resource, { ...record } as DomainRecord, now),
       );
   }
 
@@ -49,11 +49,12 @@ export class LogisticsTaxService {
   ): Promise<DomainRecord> {
     const now = Date.now();
     const isoNow = new Date(now).toISOString();
+    // Store only raw input — derived fields (filingRisk, daysUntilDue, etc.) are
+    // computed at read-time so they never go stale in the persisted payload.
     const record: DomainRecord = {
       id: randomUUID(),
       tenantId: request.actor!.tenantId,
       ...input,
-      ...this.analysisFields(resource, input, now),
       createdAt: isoNow,
       updatedAt: isoNow,
     };
@@ -62,7 +63,17 @@ export class LogisticsTaxService {
       record,
       countryCodes,
     )) as DomainRecord;
-    return this.withLegalSourceAssessment(stored, now);
+    return this.withReadTimeFields(resource, stored, now);
+  }
+
+  // Single exit point for all read paths: compute derived fields fresh, then legal assessment.
+  // analysisFields reads raw stored fields (dueDate, statutoryDeadline, etc.) so it is safe
+  // to call on any persisted record; stale stored snapshots are overridden.
+  private withReadTimeFields(resource: LogisticsResource, record: DomainRecord, now: number): DomainRecord {
+    const analysis = this.analysisFields(resource, record as Record<string, unknown>, now);
+    const enriched: DomainRecord =
+      Object.keys(analysis).length > 0 ? { ...record, ...analysis } : record;
+    return this.withLegalSourceAssessment(enriched, now);
   }
 
   private withLegalSourceAssessment(record: DomainRecord, now: number): DomainRecord {
@@ -192,9 +203,13 @@ export class LogisticsTaxService {
           ? { daysUntilDue, filingRisk: "RESOLVED" }
           : { filingRisk: "RESOLVED" };
       }
-      // OVERDUE set explicitly without a deadline: trust the caller's stated status.
-      if (inputStatus === "OVERDUE" && daysUntilDue === null) {
-        return { filingRisk: "OVERDUE" };
+      // Trust the caller's explicit OVERDUE status regardless of whether a dueDate is present.
+      // Previously, OVERDUE + future dueDate fell through to date arithmetic and returned
+      // ON_TRACK, directly contradicting the stated status.
+      if (inputStatus === "OVERDUE") {
+        return daysUntilDue !== null
+          ? { daysUntilDue, filingRisk: "OVERDUE" }
+          : { filingRisk: "OVERDUE" };
       }
       if (daysUntilDue === null) return {};
       const filingRisk =

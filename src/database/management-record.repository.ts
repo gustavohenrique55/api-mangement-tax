@@ -23,22 +23,30 @@ export class ManagementRecordRepository {
     record: StoredRecord,
     countryCodes: string[] = [],
   ): Promise<StoredRecord> {
+    // Strip internal control fields before any write so no caller — HTTP, seed script,
+    // test, or migration — can persist a pre-tombstoned or mis-classified record.
+    const payload = { ...record } as Record<string, unknown>;
+    delete payload.__erased;
+    delete payload.erasedAt;
+    delete payload.__resourceType;
+    const clean = payload as StoredRecord;
+
     if (!this.database.enabled) {
-      this.memory.push({ ...record, __resourceType: resourceType });
-      return structuredClone(record);
+      this.memory.push({ ...clean, __resourceType: resourceType });
+      return structuredClone(clean);
     }
-    await this.database.withTenant(record.tenantId, async (transaction) => {
+    await this.database.withTenant(clean.tenantId, async (transaction) => {
       await transaction.managementRecord.create({
         data: {
-          id: record.id,
-          tenantId: record.tenantId,
+          id: clean.id,
+          tenantId: clean.tenantId,
           resourceType,
           countryCodes: countryCodes as Prisma.InputJsonValue,
-          payload: record as Prisma.InputJsonValue,
+          payload: clean as Prisma.InputJsonValue,
         },
       });
     });
-    return structuredClone(record);
+    return structuredClone(clean);
   }
 
   async list(resourceType: string, tenantId: string): Promise<StoredRecord[]> {

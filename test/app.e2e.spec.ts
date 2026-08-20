@@ -5,6 +5,7 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AppModule } from "../src/app.module";
 import { ProblemDetailsFilter } from "../src/platform/problem-details.filter";
+import { ManagementRecordRepository } from "../src/database/management-record.repository";
 
 describe("API Management Tax", () => {
   let app: INestApplication;
@@ -449,6 +450,26 @@ describe("API Management Tax", () => {
       .expect(201);
     expect(overdueNoDueDate.body.filingRisk).toBe("OVERDUE");
 
+    // Architectural fix: OVERDUE + future dueDate must still return filingRisk:"OVERDUE".
+    // Previously, the OVERDUE early-exit only fired when dueDate was absent; a future dueDate
+    // caused date arithmetic to override the stated status with "ON_TRACK".
+    const overdueWithFutureDueDate = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "OTHER",
+        filingFrequency: "ANNUAL",
+        status: "OVERDUE",
+        dueDate: "2030-12-31",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "Receita Federal",
+      })
+      .expect(201);
+    expect(overdueWithFutureDueDate.body.filingRisk).toBe("OVERDUE");
+    expect(overdueWithFutureDueDate.body.daysUntilDue).toBeTypeOf("number");
+
     // Fix 4: a past (but valid) effectiveTo must set status to SUPERSEDED.
     // Note: the NaN guard added to assessLegalSource is defensive for DB-injected data only;
     // @IsDateString() on the DTO blocks invalid date strings before reaching the service.
@@ -480,7 +501,7 @@ describe("API Management Tax", () => {
       .get("/v1/audit-events")
       .set(headers)
       .expect(200);
-    expect(audit.body.data).toHaveLength(15);
+    expect(audit.body.data).toHaveLength(16);
     expect(audit.body.integrityValid).toBe(true);
   });
 
@@ -1010,5 +1031,24 @@ describe("API Management Tax", () => {
       .set("x-service-token", "test-service-token")
       .send(body)
       .expect(503);
+  });
+
+  it("repository.create() strips __erased so a pre-tombstoned payload is always visible", async () => {
+    // Verify Fix 2 at the persistence layer: any caller (seed script, internal service,
+    // migration) passing __erased:true must not silently create an invisible record.
+    const repo = app.get(ManagementRecordRepository);
+    const tenantId = "tenant-strip-guard";
+    const id = "pre-tombstone-guard-id";
+    await repo.create("guardTest", {
+      id,
+      tenantId,
+      createdAt: new Date().toISOString(),
+      __erased: true,
+    } as unknown as Parameters<typeof repo.create>[1]);
+    const records = await repo.list("guardTest", tenantId);
+    expect(records.some((r) => r.id === id)).toBe(true);
+    // The __erased field itself must not be present in the stored record.
+    const stored = records.find((r) => r.id === id)!;
+    expect(stored.__erased).toBeUndefined();
   });
 });
