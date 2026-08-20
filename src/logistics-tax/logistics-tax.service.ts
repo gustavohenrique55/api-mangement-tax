@@ -179,16 +179,24 @@ export class LogisticsTaxService {
     if (resource === "complianceObligations") {
       const inputStatus =
         typeof input.status === "string" ? input.status : null;
+      const hasDueDate = typeof input.dueDate === "string";
+      const daysUntilDue = hasDueDate
+        ? Math.ceil((new Date(input.dueDate as string).getTime() - now) / 86_400_000)
+        : null;
       if (
         inputStatus === "FILED" ||
         inputStatus === "EXEMPT" ||
         inputStatus === "NOT_APPLICABLE"
       ) {
-        return { filingRisk: "RESOLVED" };
+        return daysUntilDue !== null
+          ? { daysUntilDue, filingRisk: "RESOLVED" }
+          : { filingRisk: "RESOLVED" };
       }
-      if (typeof input.dueDate !== "string") return {};
-      const due = new Date(input.dueDate).getTime();
-      const daysUntilDue = Math.ceil((due - now) / 86_400_000);
+      // OVERDUE set explicitly without a deadline: trust the caller's stated status.
+      if (inputStatus === "OVERDUE" && daysUntilDue === null) {
+        return { filingRisk: "OVERDUE" };
+      }
+      if (daysUntilDue === null) return {};
       const filingRisk =
         daysUntilDue < 0
           ? "OVERDUE"

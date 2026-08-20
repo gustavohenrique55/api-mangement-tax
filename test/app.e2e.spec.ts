@@ -398,6 +398,7 @@ describe("API Management Tax", () => {
     });
 
     // Fix 9: a terminal status must produce filingRisk=RESOLVED even if dueDate is past.
+    // Fix 2: daysUntilDue must still be present when a terminal status has a dueDate.
     const filed = await request(app.getHttpServer())
       .post("/v1/compliance-obligations")
       .set(headers)
@@ -413,8 +414,9 @@ describe("API Management Tax", () => {
       })
       .expect(201);
     expect(filed.body.filingRisk).toBe("RESOLVED");
+    expect(filed.body.daysUntilDue).toBeTypeOf("number");
 
-    // Fix 5: terminal status without dueDate must also resolve to RESOLVED.
+    // Fix 5a: terminal status without dueDate must also resolve to RESOLVED.
     const filedNoDueDate = await request(app.getHttpServer())
       .post("/v1/compliance-obligations")
       .set(headers)
@@ -429,8 +431,27 @@ describe("API Management Tax", () => {
       })
       .expect(201);
     expect(filedNoDueDate.body.filingRisk).toBe("RESOLVED");
+    expect(filedNoDueDate.body.daysUntilDue).toBeUndefined();
 
-    // Fix 4: a past effectiveTo must set status to SUPERSEDED.
+    // Fix 5b: OVERDUE status without dueDate must return filingRisk: "OVERDUE" (not empty object).
+    const overdueNoDueDate = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "OTHER",
+        filingFrequency: "ANNUAL",
+        status: "OVERDUE",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "Receita Federal",
+      })
+      .expect(201);
+    expect(overdueNoDueDate.body.filingRisk).toBe("OVERDUE");
+
+    // Fix 4: a past (but valid) effectiveTo must set status to SUPERSEDED.
+    // Note: the NaN guard added to assessLegalSource is defensive for DB-injected data only;
+    // @IsDateString() on the DTO blocks invalid date strings before reaching the service.
     const superseded = await request(app.getHttpServer())
       .post("/v1/compliance-obligations")
       .set(headers)
@@ -459,7 +480,7 @@ describe("API Management Tax", () => {
       .get("/v1/audit-events")
       .set(headers)
       .expect(200);
-    expect(audit.body.data).toHaveLength(14);
+    expect(audit.body.data).toHaveLength(15);
     expect(audit.body.integrityValid).toBe(true);
   });
 
@@ -894,6 +915,22 @@ describe("API Management Tax", () => {
         .set(headers)
         .expect(200);
       expect(afterPurge.body.legalValidationStatus).toBe("VALIDATED");
+
+      // demoSeeds must also survive: a second seed call must return ALREADY_SEEDED,
+      // not re-execute the full seed (which would indicate the idempotency marker was purged).
+      const secondSeed = await request(app.getHttpServer())
+        .post("/v1/demo/seed")
+        .set(headers)
+        .expect(201);
+      expect(secondSeed.body).toMatchObject({ seeded: false, reason: "ALREADY_SEEDED" });
+
+      // A second purge run must not inflate the purged count (already-tombstoned records
+      // must be excluded from the eligible set).
+      const secondPurge = await request(app.getHttpServer())
+        .post("/v1/privacy/retention/purge?apply=true")
+        .set(headers)
+        .expect(201);
+      expect(secondPurge.body.purged).toBe(0);
     } finally {
       delete process.env.DATA_RETENTION_DAYS;
     }

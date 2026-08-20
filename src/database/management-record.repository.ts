@@ -2,7 +2,9 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "../generated/prisma/client";
 import { DatabaseService } from "./database.service";
 
-const PURGE_EXEMPT_RESOURCE_TYPES = new Set(["ropaApprovals"]);
+// ropaApprovals: compliance evidence that must survive retention purges.
+// demoSeeds: operational idempotency marker — purging it would re-trigger seeding.
+const PURGE_EXEMPT_RESOURCE_TYPES = new Set(["ropaApprovals", "demoSeeds"]);
 
 export type StoredRecord = Record<string, unknown> & {
   id: string;
@@ -73,7 +75,8 @@ export class ManagementRecordRepository {
         (record) =>
           record.tenantId === tenantId &&
           record.createdAt < cutoffIso &&
-          !PURGE_EXEMPT_RESOURCE_TYPES.has(record.__resourceType as string),
+          !PURGE_EXEMPT_RESOURCE_TYPES.has(record.__resourceType as string) &&
+          !record.__erased,
       );
       if (apply) {
         for (const record of matches) tombstone(record);
@@ -90,9 +93,11 @@ export class ManagementRecordRepository {
           createdAt: { lt: new Date(cutoffIso) },
           resourceType: { notIn: [...PURGE_EXEMPT_RESOURCE_TYPES] },
         },
-        select: { id: true },
+        select: { id: true, payload: true },
       });
-      const eligible = rows.map((row) => row.id);
+      const eligible = rows
+        .filter((row) => !(row.payload as Record<string, unknown>).__erased)
+        .map((row) => row.id);
       if (apply) {
         for (const id of eligible) {
           await transaction.managementRecord.update({
