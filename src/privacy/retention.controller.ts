@@ -9,6 +9,17 @@ import { Public } from "../security/public.decorator";
 import { ServiceTokenGuard } from "../security/service-token.guard";
 import { PrivacyService } from "./privacy.service";
 
+// Rejects unrecognised values instead of silently defaulting to dry-run.
+function parseApply(value?: string): boolean {
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  if (lower === "true") return true;
+  if (lower === "false") return false;
+  throw new BadRequestException(
+    `apply must be 'true' or 'false' (case-insensitive); received: '${value}'`,
+  );
+}
+
 @Controller("v1/system")
 @UseGuards(ServiceTokenGuard)
 export class RetentionController {
@@ -29,6 +40,6 @@ export class RetentionController {
   ) {
     const tid = tenantId?.trim();
     if (!tid) throw new BadRequestException("tenantId is required");
-    return this.privacy.purgeForTenant(tid, apply === "true");
+    return this.privacy.purgeForTenant(tid, parseApply(apply));
   }
 }

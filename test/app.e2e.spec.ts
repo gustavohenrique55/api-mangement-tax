@@ -926,6 +926,20 @@ describe("API Management Tax", () => {
       .set(headers)
       .expect(403);
 
+    // apply=TRUE (uppercase) was silently treated as false (dry-run) before the fix.
+    // After case-insensitive normalisation it resolves to true → mode APPLIED, not DRY_RUN.
+    const appliedUppercase = await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge?apply=TRUE")
+      .set(dpoHeaders)
+      .expect(201);
+    expect(appliedUppercase.body.mode).toBe("APPLIED");
+
+    // apply=1 is not a recognisable boolean string and must return 400.
+    await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge?apply=1")
+      .set(dpoHeaders)
+      .expect(400);
+
     const dryRun = await request(app.getHttpServer())
       .post("/v1/privacy/retention/purge")
       .set(dpoHeaders)
@@ -1002,6 +1016,14 @@ describe("API Management Tax", () => {
       .set("x-service-token", "test-service-token")
       .expect(400);
 
+    // apply=TRUE (uppercase) was silently treated as false (dry-run) before the fix.
+    // After case-insensitive normalisation it resolves to true → mode APPLIED, not DRY_RUN.
+    const appliedUppercase = await request(app.getHttpServer())
+      .post("/v1/system/retention/run?tenantId=tenant-job&apply=TRUE")
+      .set("x-service-token", "test-service-token")
+      .expect(201);
+    expect(appliedUppercase.body.mode).toBe("APPLIED");
+
     const report = await request(app.getHttpServer())
       .post("/v1/system/retention/run?tenantId=tenant-job")
       .set("x-service-token", "test-service-token")
@@ -1074,6 +1096,46 @@ describe("API Management Tax", () => {
         (event: { action: string }) => event.action === "privacy.retention-purge",
       ),
     ).toBe(true);
+  });
+
+  it("eraseSubject retainedAuditEvents correctly includes DPO purge events on self-erasure", async () => {
+    // Investigation finding from code review: eraseSubject counts ALL audit events where
+    // actorSubject === subject, including purge events the DPO generated as an operator.
+    // This is CORRECT by design: under LGPD art. 16, any immutable audit record that
+    // identifies the data subject (via actorSubject) constitutes personal data retained for
+    // legal obligation — operational logs are not exempt from this count.
+    //
+    // This test documents and proves the expected behaviour: if a DPO runs apply=true and
+    // then performs self-erasure, the purge event IS included in retainedAuditEvents.
+    const dpoHeaders = {
+      "x-synthetic-tenant-id": "tenant-self-erase-dpo",
+      "x-synthetic-subject": "dpo.selferase",
+      "x-synthetic-roles": "privacy-officer",
+    };
+
+    // DPO runs a purge (purged=0 — no records past cutoff on fresh tenant).
+    // This writes a privacy.retention-purge event with actorSubject='dpo.selferase'.
+    await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge?apply=true")
+      .set(dpoHeaders)
+      .expect(201);
+
+    // Export to count how many events exist before erasure.
+    const preExport = await request(app.getHttpServer())
+      .get("/v1/privacy/data-subjects/dpo.selferase/export")
+      .set(dpoHeaders)
+      .expect(200);
+    const preCount = preExport.body.auditTrail.length;
+    expect(preCount).toBeGreaterThanOrEqual(1); // the purge event above
+
+    // Self-erasure: actor and subject are the same ('dpo.selferase').
+    // retained = preCount (all prior events incl. purge) + 1 (selfErasure correction
+    //   for the erasure event about to be written, which also has actorSubject='dpo.selferase').
+    const erasure = await request(app.getHttpServer())
+      .post("/v1/privacy/data-subjects/dpo.selferase/erasure")
+      .set(dpoHeaders)
+      .expect(201);
+    expect(erasure.body.retainedForLegalObligation.auditEvents).toBe(preCount + 1);
   });
 
   it("provisions a tenant via the token-guarded system endpoint", async () => {

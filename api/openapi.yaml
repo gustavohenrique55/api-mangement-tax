@@ -617,7 +617,7 @@ paths:
       tags: [Privacy]
       operationId: reviewProcessingActivities
       description: >-
-        Requer função privacy-officer ou tax-admin. Registra a decisão do DPO para a versão
+        Requer função privacy-officer. Registra a decisão do DPO para a versão
         vigente (VALIDATED/REJECTED), com approvedBy/approvedAt, e a audita.
       requestBody:
         required: true
@@ -646,7 +646,7 @@ paths:
       summary: Exportar os dados do titular (acesso e portabilidade)
       tags: [Privacy]
       operationId: exportDataSubject
-      description: Requer função tax-admin.
+      description: Requer função privacy-officer.
       parameters:
         - $ref: "#/components/parameters/DataSubject"
       responses:
@@ -664,7 +664,7 @@ paths:
       tags: [Privacy]
       operationId: eraseDataSubject
       description: >-
-        Requer função tax-admin. A trilha de auditoria é retida por obrigação legal
+        Requer função privacy-officer. A trilha de auditoria é retida por obrigação legal
         (LGPD art. 16) e permanece imutável; a operação é auditada.
       parameters:
         - $ref: "#/components/parameters/DataSubject"
@@ -683,8 +683,9 @@ paths:
       tags: [Privacy]
       operationId: purgeByRetention
       description: >-
-        Requer função tax-admin. Dry-run por padrão; use apply=true para anonimizar.
-        Não afeta a trilha de auditoria (imutável).
+        Requer função privacy-officer. Dry-run por padrão; use apply=true para anonimizar.
+        Todo apply=true (mesmo com purged=0) registra evento de auditoria. Não afeta a
+        trilha de auditoria imutável existente.
       parameters:
         - name: apply
           in: query

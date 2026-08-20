@@ -1,8 +1,19 @@
-import { Body, Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { RequireRoles } from "../security/roles.decorator";
 import { ApproveRopaDto } from "./privacy.dto";
 import { PrivacyService } from "./privacy.service";
+
+// Rejects unrecognised values instead of silently defaulting to dry-run.
+function parseApply(value?: string): boolean {
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  if (lower === "true") return true;
+  if (lower === "false") return false;
+  throw new BadRequestException(
+    `apply must be 'true' or 'false' (case-insensitive); received: '${value}'`,
+  );
+}
 
 @RequireRoles("tax-admin")
 @Controller("v1/privacy")
@@ -51,6 +62,6 @@ export class PrivacyController {
     @Req() request: Request,
     @Query("apply") apply?: string,
   ) {
-    return this.privacy.purgeByRetention(request, apply === "true");
+    return this.privacy.purgeByRetention(request, parseApply(apply));
   }
 }
