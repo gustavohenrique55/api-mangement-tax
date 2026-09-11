@@ -7,12 +7,21 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
   IsUUID,
   Length,
   Matches,
   MaxLength,
   Min,
+  ValidateNested,
 } from "class-validator";
+import { Type } from "class-transformer";
+import {
+  LEGAL_INSTRUMENT_TYPES,
+  LEGAL_SOURCE_VERIFICATION_STATUSES,
+  type LegalInstrumentType,
+  type LegalSourceVerificationStatus,
+} from "./legal-source";
 import {
   LEGAL_VALIDATION_STATUSES,
   OPERATION_TYPES,
@@ -23,6 +32,28 @@ import {
   type RecoveryStatus,
   type TransportMode,
 } from "./logistics-tax.types";
+
+/**
+ * Citação da norma que fundamenta o registro. Substitui o texto livre de
+ * `sourceReference` por campos auditáveis — sem que a plataforma passe a
+ * concluir tratamento tributário: a norma é rastreada, não interpretada.
+ */
+export class LegalSourceDto {
+  /** ISO 3166-1 alpha-2 ou "EU" para instrumento supranacional. */
+  @Matches(/^([A-Z]{2})$/) jurisdictionCode!: string;
+  @IsOptional() @IsString() @Matches(/^[A-Z0-9-]{1,10}$/) subnationalCode?: string;
+  @IsIn(LEGAL_INSTRUMENT_TYPES) instrumentType!: LegalInstrumentType;
+  @IsString() @Length(3, 200) instrument!: string;
+  @IsOptional() @IsString() @Length(1, 120) article?: string;
+  @IsDateString() effectiveFrom!: string;
+  @IsOptional() @IsDateString() effectiveTo?: string;
+  @IsOptional() @IsUrl({ protocols: ["https"], require_protocol: true })
+  officialUrl?: string;
+  @IsIn(LEGAL_SOURCE_VERIFICATION_STATUSES)
+  verificationStatus!: LegalSourceVerificationStatus;
+  @IsOptional() @IsDateString() verifiedAt?: string;
+  @IsOptional() @IsString() @Length(2, 160) verifiedBy?: string;
+}
 
 export class CreateOperationalProfileDto {
   @IsISO31661Alpha2() countryCode!: string;
@@ -102,10 +133,23 @@ export class CreateCustomsRegimeDto {
   @IsIn(LEGAL_VALIDATION_STATUSES)
   legalValidationStatus!: LegalValidationStatus;
   @IsOptional() @IsString() @MaxLength(500) sourceReference?: string;
+  @IsOptional() @ValidateNested() @Type(() => LegalSourceDto)
+  legalSource?: LegalSourceDto;
 }
 
 export class CreateTaxRuleDto {
   @IsISO31661Alpha2() countryCode!: string;
+  @IsOptional() @IsString() @Matches(/^[A-Z0-9-]{1,10}$/) subnationalCode?: string;
+  @IsOptional()
+  @IsIn([
+    "STANDARD_VAT",
+    "LEGACY_ICMS_ISS",
+    "IBS_CBS_TRANSITION",
+    "IBS_CBS",
+    "SUBNATIONAL_TURNOVER",
+    "OTHER",
+  ])
+  taxSystemRegime?: string;
   @IsIn([
     "CORPORATE_INCOME",
     "VAT_GST",
@@ -120,11 +164,44 @@ export class CreateTaxRuleDto {
   ])
   taxType!: string;
   @IsIn(OPERATION_TYPES) operationType!: OperationType;
+  @IsOptional()
+  @IsIn(["FEDERAL", "STATE_PROVINCIAL", "MUNICIPAL", "SUPRANATIONAL"])
+  taxLevel?: string;
+  @IsOptional()
+  @IsIn([
+    "IVA",
+    "ICMS",
+    "ISS",
+    "IPI",
+    "PIS_COFINS",
+    "IBS",
+    "CBS",
+    "INGRESOS_BRUTOS",
+    "ISC_EXCISE",
+    "GST",
+    "SALES_TAX",
+    "OTHER",
+  ])
+  indirectTaxSubtype?: string;
+  @IsOptional()
+  @IsIn(["NON_CUMULATIVE", "CUMULATIVE", "PARTIAL", "NON_CREDITABLE"])
+  creditRegime?: string;
+  @IsOptional()
+  @IsIn(["STANDARD", "REDUCED", "ZERO_RATED", "EXEMPT", "INTERSTATE"])
+  rateType?: string;
+  @IsOptional()
+  @IsIn(["TAX_INCLUSIVE", "TAX_EXCLUSIVE"])
+  calculationBasis?: string;
+  @IsOptional()
+  @IsIn(["STANDARD", "WITHHOLDING", "TAX_SUBSTITUTION", "REVERSE_CHARGE"])
+  collectionMechanism?: string;
   @IsOptional() @IsNumber() @Min(0) ratePercent?: number;
   @IsString() @Length(2, 500) applicabilitySummary!: string;
   @IsIn(LEGAL_VALIDATION_STATUSES)
   legalValidationStatus!: LegalValidationStatus;
   @IsString() @Length(3, 500) sourceReference!: string;
+  @IsOptional() @ValidateNested() @Type(() => LegalSourceDto)
+  legalSource?: LegalSourceDto;
 }
 
 export class CreateTaxDocumentDto {
@@ -192,10 +269,12 @@ export class CreatePermanentEstablishmentAssessmentDto {
       "FIXED_PLACE",
       "WAREHOUSE",
       "DEPENDENT_AGENT",
+      "INDEPENDENT_AGENT",
       "CONTRACT_AUTHORITY",
       "EMPLOYEES",
       "DEDICATED_FLEET",
       "SERVICE_DURATION",
+      "SERVICE_183_DAYS",
       "LOCAL_DECISION_MAKING",
     ],
     { each: true },
@@ -214,4 +293,38 @@ export class CreateIntegrationConnectionDto {
   @IsIn(["INBOUND", "OUTBOUND", "BIDIRECTIONAL"]) direction!: string;
   @IsIn(["PLANNED", "DISABLED", "ACTIVE", "ERROR"]) status!: string;
   @IsString() @Length(3, 160) secretReference!: string;
+}
+
+export class CreateComplianceObligationDto {
+  @IsISO31661Alpha2() countryCode!: string;
+  @IsOptional() @IsUUID() legalEntityId?: string;
+  @IsIn([
+    "CBCR",
+    "TP_DOCUMENTATION",
+    "FATCA",
+    "CRS",
+    "ECONOMIC_SUBSTANCE",
+    "MDR",
+    "DAC6",
+    "E_INVOICING",
+    "OTHER",
+  ])
+  regime!: string;
+  @IsIn(["ANNUAL", "QUARTERLY", "MONTHLY", "EVENT_DRIVEN", "ONE_OFF"])
+  filingFrequency!: string;
+  @IsIn([
+    "NOT_APPLICABLE",
+    "PENDING_ASSESSMENT",
+    "IN_PREPARATION",
+    "FILED",
+    "OVERDUE",
+    "EXEMPT",
+  ])
+  status!: string;
+  @IsOptional() @IsDateString() dueDate?: string;
+  @IsIn(LEGAL_VALIDATION_STATUSES)
+  legalValidationStatus!: LegalValidationStatus;
+  @IsString() @Length(3, 500) sourceReference!: string;
+  @IsOptional() @ValidateNested() @Type(() => LegalSourceDto)
+  legalSource?: LegalSourceDto;
 }

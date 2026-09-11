@@ -5,7 +5,7 @@ MVP técnico para governança tributária multi-jurisdicional na América Latina
 ## Estado do MVP 0.1
 
 - contrato OpenAPI 3.1 em `api/openapi.yaml`;
-- API NestJS com saúde, contexto de identidade, jurisdições, auditoria e dez domínios tributário-logísticos;
+- API NestJS com saúde, contexto de identidade, jurisdições, auditoria e onze domínios tributário-logísticos;
 - persistência genérica dos registros gerenciais em PostgreSQL via Prisma, com fallback em memória somente para testes;
 - configuração versionada do CFO e cadastro da rede regional de escritórios tributários;
 - cenário sintético idempotente para oito jurisdições e dashboard executivo separado;
@@ -23,11 +23,12 @@ MVP técnico para governança tributária multi-jurisdicional na América Latina
 3. Estabelecimentos (`/v1/establishments`): escritórios, armazéns, terminais, portos, aeroportos e depósitos.
 4. Rotas logísticas (`/v1/logistics-lanes`): origem, destino, modal, entidade faturadora, Incoterm e moeda.
 5. Regimes aduaneiros (`/v1/customs-regimes`): trânsito, drawback, zonas francas, admissão temporária e armazém alfandegado.
-6. Regras tributárias (`/v1/tax-rules`): tributo por país e tipo de operação, com fonte e status de validação jurídica.
+6. Regras tributárias (`/v1/tax-rules`): tributo por país e tipo de operação, com fonte e status de validação jurídica. Para tributos indiretos, modela nível federativo, subtipo (ICMS, ISS, IVA, IBS/CBS, Ingresos Brutos e outros), regime de crédito, tipo de alíquota, base de cálculo e mecanismo de arrecadação, derivando creditabilidade do insumo e consistência de alíquota/isenção.
 7. Documentos (`/v1/tax-documents`): metadados fiscais, de transporte e aduaneiros, com classificação da informação.
 8. Recuperação de tributos (`/v1/tax-recovery-opportunities`): crédito operacional ou extraordinário, valor, prazo, canal e risco prescricional calculado.
 9. Estabelecimento permanente (`/v1/permanent-establishment-assessments`): fatores e nível de risco; a saída é sempre indicador preliminar sujeito a advogado local.
 10. Integrações (`/v1/integration-connections`): ERP, TMS, WMS, aduana, contencioso e assessoria local; a API armazena somente referência ao segredo, nunca a credencial.
+11. Compliance internacional (`/v1/compliance-obligations`): CbCR, documentação de preços de transferência, FATCA/CRS, economic substance, MDR/DAC6 e e-invoicing, com frequência, prazo, status e risco de prazo calculado.
 
 Todos os dez domínios aplicam tenant, escopo de país, RBAC e evento de auditoria. O contrato está em `api/openapi.yaml`, e a migração `202608160001_logistics_tax_expansion` cria as tabelas correspondentes com RLS forçada.
 
@@ -89,6 +90,6 @@ Os registros gerenciais já usam PostgreSQL/Prisma quando `DATABASE_URL` está c
 
 ## Catálogo regional anonimizado
 
-`GET /v1/jurisdictions/country-groups` retorna o catálogo anonimizado organizado nos três blocos solicitados. O México integra o bloco gerencial América Central apenas para organização do portfólio. O bloco Ilhas do Caribe contém os 13 países soberanos da região; Cuba e Haiti são referências documentais Tier 5, enquanto os outros 11 países têm origem `REGIONAL_CATALOG` e tier nulo até confirmação. O mesmo bloco mantém separadamente Porto Rico, Aruba, Curaçao, Ilhas Cayman, Guadalupe e Martinica como jurisdições não soberanas, com autoridade soberana e modelo legal explícitos. A referência agregada “Guianas” foi desdobrada em Guiana e Suriname como países soberanos e Guiana Francesa como região ultraperiférica vinculada à França. Todos os itens permanecem com presença operacional `UNCONFIRMED`.
+`GET /v1/jurisdictions/country-groups` retorna o catálogo anonimizado organizado nos três blocos solicitados. O México integra o bloco gerencial América Central apenas para organização do portfólio. O bloco Ilhas do Caribe contém os 13 países soberanos da região; Cuba e Haiti são referências documentais Tier 5, enquanto os outros 11 países têm origem `REGIONAL_CATALOG` e tier nulo até confirmação. O mesmo bloco mantém separadamente 15 jurisdições não soberanas — Porto Rico, Aruba, Curaçao, Ilhas Cayman, Guadalupe, Martinica, Sint Maarten, Países Baixos Caribenhos (BES), Ilhas Virgens Britânicas, Ilhas Virgens Americanas, Ilhas Turcas e Caicos, Anguilla, Montserrat, Saint-Martin e Saint-Barthélemy — com autoridade soberana e modelo legal explícitos. A referência agregada “Guianas” foi desdobrada em Guiana e Suriname como países soberanos e Guiana Francesa como região ultraperiférica vinculada à França. Todos os itens permanecem com presença operacional `UNCONFIRMED`, e cada item traz `restrictionStatus` — Cuba e Venezuela são marcadas como `SANCTIONS_SCREENING_REQUIRED`.
 
 O vínculo soberano não significa aplicação automática e integral da lei do país soberano. Cada território recebe `applicableLawModel: TERRITORY_SPECIFIC_WITH_SOVEREIGN_FRAMEWORK` e `legalValidationStatus: REQUIRED_LOCAL_COUNSEL`, exigindo análise conjunta da legislação local, do vínculo constitucional e, quando aplicável, de normas do país soberano e da União Europeia.

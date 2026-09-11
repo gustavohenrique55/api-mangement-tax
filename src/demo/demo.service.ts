@@ -53,6 +53,60 @@ const COUNTRIES = [
   },
 ] as const;
 
+interface IndirectTaxProfile {
+  taxLevel: string;
+  subtype: string;
+  creditRegime: string;
+  rateType: string;
+  calculationBasis: string;
+  collectionMechanism: string;
+  ratePercent: number;
+}
+
+const DEFAULT_INDIRECT_TAX: IndirectTaxProfile = {
+  taxLevel: "FEDERAL",
+  subtype: "IVA",
+  creditRegime: "NON_CUMULATIVE",
+  rateType: "STANDARD",
+  calculationBasis: "TAX_EXCLUSIVE",
+  collectionMechanism: "STANDARD",
+  ratePercent: 16,
+};
+
+const INDIRECT_TAX_BY_COUNTRY: Record<string, IndirectTaxProfile> = {
+  BR: {
+    taxLevel: "STATE_PROVINCIAL",
+    subtype: "ICMS",
+    creditRegime: "NON_CUMULATIVE",
+    rateType: "INTERSTATE",
+    calculationBasis: "TAX_INCLUSIVE",
+    collectionMechanism: "TAX_SUBSTITUTION",
+    ratePercent: 12,
+  },
+  AR: {
+    taxLevel: "STATE_PROVINCIAL",
+    subtype: "INGRESOS_BRUTOS",
+    creditRegime: "CUMULATIVE",
+    rateType: "STANDARD",
+    calculationBasis: "TAX_EXCLUSIVE",
+    collectionMechanism: "WITHHOLDING",
+    ratePercent: 3,
+  },
+  KY: {
+    taxLevel: "FEDERAL",
+    subtype: "OTHER",
+    creditRegime: "NON_CREDITABLE",
+    rateType: "EXEMPT",
+    calculationBasis: "TAX_EXCLUSIVE",
+    collectionMechanism: "STANDARD",
+    ratePercent: 0,
+  },
+};
+
+function indirectTaxFor(code: string): IndirectTaxProfile {
+  return INDIRECT_TAX_BY_COUNTRY[code] ?? DEFAULT_INDIRECT_TAX;
+}
+
 @Injectable()
 export class DemoService {
   constructor(
@@ -158,6 +212,7 @@ export class DemoService {
         foreignExchangeEffect: country.code === "AR" ? 12000 : 2000,
         baselineEtrPercent: 22,
         targetEtrPercent: 19,
+        globeRegimeStatus: country.code === "KY" ? "QDMTT" : "NOT_ENACTED",
         optimizationImpact: -5000,
         legislativeImpact: 2000,
         contingencyImpact: 1000,
@@ -207,6 +262,51 @@ export class DemoService {
         },
         [country.code],
       );
+
+      await this.logistics.create(
+        "complianceObligations",
+        request,
+        {
+          countryCode: country.code,
+          regime:
+            country.code === "KY"
+              ? "ECONOMIC_SUBSTANCE"
+              : country.code === "PR"
+                ? "FATCA"
+                : country.tier === "TIER_1"
+                  ? "CBCR"
+                  : "E_INVOICING",
+          filingFrequency: "ANNUAL",
+          status: "PENDING_ASSESSMENT",
+          dueDate: "2026-12-31",
+          legalValidationStatus: "PENDING_LOCAL_COUNSEL",
+          sourceReference: "Referência sintética para demonstração.",
+        },
+        [country.code],
+      );
+
+      const indirectTax = indirectTaxFor(country.code);
+      await this.logistics.create(
+        "taxRules",
+        request,
+        {
+          countryCode: country.code,
+          taxType: "VAT_GST",
+          operationType: "FREIGHT_FORWARDING",
+          taxLevel: indirectTax.taxLevel,
+          indirectTaxSubtype: indirectTax.subtype,
+          creditRegime: indirectTax.creditRegime,
+          rateType: indirectTax.rateType,
+          calculationBasis: indirectTax.calculationBasis,
+          collectionMechanism: indirectTax.collectionMechanism,
+          ratePercent: indirectTax.ratePercent,
+          applicabilitySummary:
+            "Tributo indireto sintético sobre serviço de frete.",
+          legalValidationStatus: "PRELIMINARY",
+          sourceReference: "Referência sintética para demonstração.",
+        },
+        [country.code],
+      );
     }
 
     const summary = {
@@ -214,7 +314,7 @@ export class DemoService {
       tenantId: request.actor!.tenantId,
       scenario: "LATAM_CARIBBEAN_LOGISTICS_2026_Q3",
       jurisdictions: COUNTRIES.map(({ code, tier }) => ({ code, tier })),
-      recordsCreated: 1 + COUNTRIES.length * 6,
+      recordsCreated: 1 + COUNTRIES.length * 8,
       syntheticDataOnly: true,
       createdAt: new Date().toISOString(),
     };

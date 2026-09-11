@@ -1,6 +1,8 @@
-import { Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { RequireRoles } from "../security/roles.decorator";
+import { parseApply } from "./parse-apply";
+import { ApproveRopaDto } from "./privacy.dto";
 import { PrivacyService } from "./privacy.service";
 
 @RequireRoles("tax-admin")
@@ -14,25 +16,42 @@ export class PrivacyController {
   }
 
   @Get("processing-activities")
-  processingActivities() {
-    return this.privacy.processingActivities();
+  processingActivities(@Req() request: Request) {
+    return this.privacy.processingActivities(request);
   }
 
+  @RequireRoles("privacy-officer")
+  @Post("processing-activities/review")
+  reviewProcessingActivities(
+    @Req() request: Request,
+    @Body() body: ApproveRopaDto,
+  ) {
+    return this.privacy.reviewProcessingActivities(
+      request,
+      body.version,
+      body.decision,
+      body.notes,
+    );
+  }
+
+  @RequireRoles("privacy-officer")
   @Get("data-subjects/:subject/export")
   exportSubject(@Req() request: Request, @Param("subject") subject: string) {
     return this.privacy.exportSubject(request, subject);
   }
 
+  @RequireRoles("privacy-officer")
   @Post("data-subjects/:subject/erasure")
   eraseSubject(@Req() request: Request, @Param("subject") subject: string) {
     return this.privacy.eraseSubject(request, subject);
   }
 
+  @RequireRoles("privacy-officer")
   @Post("retention/purge")
   purgeByRetention(
     @Req() request: Request,
     @Query("apply") apply?: string,
   ) {
-    return this.privacy.purgeByRetention(request, apply === "true");
+    return this.privacy.purgeByRetention(request, parseApply(apply));
   }
 }

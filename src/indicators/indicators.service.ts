@@ -139,18 +139,15 @@ export class IndicatorsService {
   }
 
   createEtr(request: Request, input: CreateEtrMeasurementDto) {
-    if (input.profitBeforeTax <= 0)
-      throw new BadRequestException(
-        "profitBeforeTax must be greater than zero",
-      );
     const taxBeforePillarTwo =
       input.currentTaxExpense + input.deferredTaxExpense;
     const totalTaxExpense = taxBeforePillarTwo + input.pillarTwoTopUpTax;
-    const etrBeforePillarTwo = percentage(
-      taxBeforePillarTwo,
-      input.profitBeforeTax,
-    );
-    const effectiveTaxRate = percentage(totalTaxExpense, input.profitBeforeTax);
+    const lossPeriod = input.profitBeforeTax <= 0;
+    // ETR percentages are not meaningful for a loss period.
+    const pct = (value: number): number | null =>
+      lossPeriod ? null : percentage(value, input.profitBeforeTax);
+    const effectiveTaxRate = pct(totalTaxExpense);
+    const globeRegimeStatus = input.globeRegimeStatus ?? "NOT_ENACTED";
     return this.store(
       "etrMeasurements",
       request,
@@ -158,21 +155,35 @@ export class IndicatorsService {
         ...input,
         reportingCurrency: "EUR",
         complementaryCurrency: "USD",
+        lossPeriod,
         taxBeforePillarTwo,
         totalTaxExpense,
-        etrBeforePillarTwo,
+        etrBeforePillarTwo: pct(taxBeforePillarTwo),
         effectiveTaxRate,
-        etrExcludingForeignExchange: percentage(
-          totalTaxExpense - input.foreignExchangeEffect,
-          input.profitBeforeTax,
-        ),
-        variationFromBaseline: round(
-          effectiveTaxRate - input.baselineEtrPercent,
-        ),
-        gapToTarget: round(effectiveTaxRate - input.targetEtrPercent),
-        pillarTwoNeutralization: round(
-          percentage(input.pillarTwoTopUpTax, input.profitBeforeTax),
-        ),
+        accountingEtr: effectiveTaxRate,
+        etrBasis: "ACCOUNTING_BOOK",
+        globeRegimeStatus,
+        globeEtrStatus:
+          globeRegimeStatus === "NOT_ENACTED"
+            ? "OUT_OF_SCOPE_LOCAL_REGIME"
+            : "REQUIRES_GLOBE_COMPUTATION",
+        globeEtrNote:
+          "ETR contábil (livro), distinta da ETR jurisdicional GloBE (impostos abrangidos ajustados sobre o lucro GloBE, com blending jurisdicional e piso de 15%), que exige cálculo próprio.",
+        etrExcludingForeignExchange: lossPeriod
+          ? null
+          : percentage(
+              totalTaxExpense - input.foreignExchangeEffect,
+              input.profitBeforeTax,
+            ),
+        variationFromBaseline:
+          effectiveTaxRate === null
+            ? null
+            : round(effectiveTaxRate - input.baselineEtrPercent),
+        gapToTarget:
+          effectiveTaxRate === null
+            ? null
+            : round(effectiveTaxRate - input.targetEtrPercent),
+        pillarTwoNeutralization: pct(input.pillarTwoTopUpTax),
       },
       [input.countryCode],
     );

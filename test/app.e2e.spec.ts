@@ -5,6 +5,7 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AppModule } from "../src/app.module";
 import { ProblemDetailsFilter } from "../src/platform/problem-details.filter";
+import { ManagementRecordRepository } from "../src/database/management-record.repository";
 
 describe("API Management Tax", () => {
   let app: INestApplication;
@@ -66,12 +67,28 @@ describe("API Management Tax", () => {
     ).toEqual(["CENTRAL_AMERICA", "CARIBBEAN_ISLANDS", "SOUTH_AMERICA"]);
     expect(response.body.data[1].coverageStatus).toBe("PENDING_CONFIRMATION");
     expect(response.body.data[1].countries).toHaveLength(13);
-    expect(response.body.data[1].territories).toHaveLength(6);
+    expect(response.body.data[1].territories).toHaveLength(15);
     expect(
       response.body.data[1].territories.map(
         (item: { countryCode: string }) => item.countryCode,
       ),
-    ).toEqual(["PR", "AW", "CW", "KY", "GP", "MQ"]);
+    ).toEqual([
+      "PR",
+      "AW",
+      "CW",
+      "KY",
+      "GP",
+      "MQ",
+      "SX",
+      "BQ",
+      "VG",
+      "VI",
+      "TC",
+      "AI",
+      "MS",
+      "MF",
+      "BL",
+    ]);
     expect(response.body.data[1].territories[0]).toMatchObject({
       jurisdictionType: "NON_SOVEREIGN_TERRITORY",
       sovereignAuthority: { countryCode: "US", name: "Estados Unidos" },
@@ -181,7 +198,7 @@ describe("API Management Tax", () => {
     expect(audit.body.integrityValid).toBe(true);
   });
 
-  it("supports the ten logistics-tax management domains", async () => {
+  it("supports the eleven logistics-tax management domains", async () => {
     const headers = {
       "x-synthetic-tenant-id": "tenant-logistics",
       "x-synthetic-subject": "logistics.admin",
@@ -247,7 +264,7 @@ describe("API Management Tax", () => {
       })
       .expect(201);
 
-    await request(app.getHttpServer())
+    const customsRegime = await request(app.getHttpServer())
       .post("/v1/customs-regimes")
       .set(headers)
       .send({
@@ -257,8 +274,21 @@ describe("API Management Tax", () => {
         regimeType: "DRAWBACK",
         legalValidationStatus: "PRELIMINARY",
         sourceReference: "Fonte oficial a validar",
+        legalSource: {
+          jurisdictionCode: "BR",
+          instrumentType: "DECREE",
+          instrument: "Decreto n.º 6.759/2009",
+          article: "art. 315",
+          effectiveFrom: "2009-02-05",
+          verificationStatus: "SOURCE_LINKED",
+        },
       })
       .expect(201);
+    expect(customsRegime.body.legalSourceAssessment).toMatchObject({
+      status: "UNVERIFIED",
+      jurisdictionAlignment: "SAME_JURISDICTION",
+      concludesTreatment: false,
+    });
 
     await request(app.getHttpServer())
       .post("/v1/tax-rules")
@@ -337,11 +367,141 @@ describe("API Management Tax", () => {
       .expect(201);
     expect(integration.body.credentialsStored).toBe(false);
 
+    const obligation = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "CBCR",
+        filingFrequency: "ANNUAL",
+        status: "IN_PREPARATION",
+        dueDate: "2026-12-31",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "OCDE BEPS Ação 13",
+        legalSource: {
+          jurisdictionCode: "BR",
+          instrumentType: "ADMINISTRATIVE_RULING",
+          instrument: "Instrução Normativa RFB n.º 1.681/2016",
+          effectiveFrom: "2017-01-01",
+          verificationStatus: "COUNSEL_CONFIRMED",
+          verifiedAt: "2026-01-15",
+          verifiedBy: "Assessoria Jurídica",
+        },
+      })
+      .expect(201);
+    expect(obligation.body.daysUntilDue).toBeTypeOf("number");
+    expect(obligation.body.filingRisk).toBeTruthy();
+    expect(obligation.body.legalSourceAssessment).toMatchObject({
+      status: "VERIFIED",
+      jurisdictionAlignment: "SAME_JURISDICTION",
+      concludesTreatment: false,
+    });
+
+    // Fix 9: a terminal status must produce filingRisk=RESOLVED even if dueDate is past.
+    // Fix 2: daysUntilDue must still be present when a terminal status has a dueDate.
+    const filed = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "OTHER",
+        filingFrequency: "ANNUAL",
+        status: "FILED",
+        dueDate: "2026-07-31",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "Receita Federal",
+      })
+      .expect(201);
+    expect(filed.body.filingRisk).toBe("RESOLVED");
+    expect(filed.body.daysUntilDue).toBeTypeOf("number");
+
+    // Fix 5a: terminal status without dueDate must also resolve to RESOLVED.
+    const filedNoDueDate = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "OTHER",
+        filingFrequency: "ANNUAL",
+        status: "FILED",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "Receita Federal",
+      })
+      .expect(201);
+    expect(filedNoDueDate.body.filingRisk).toBe("RESOLVED");
+    expect(filedNoDueDate.body.daysUntilDue).toBeUndefined();
+
+    // Fix 5b: OVERDUE status without dueDate must return filingRisk: "OVERDUE" (not empty object).
+    const overdueNoDueDate = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "OTHER",
+        filingFrequency: "ANNUAL",
+        status: "OVERDUE",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "Receita Federal",
+      })
+      .expect(201);
+    expect(overdueNoDueDate.body.filingRisk).toBe("OVERDUE");
+
+    // Architectural fix: OVERDUE + future dueDate must still return filingRisk:"OVERDUE".
+    // Previously, the OVERDUE early-exit only fired when dueDate was absent; a future dueDate
+    // caused date arithmetic to override the stated status with "ON_TRACK".
+    const overdueWithFutureDueDate = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "OTHER",
+        filingFrequency: "ANNUAL",
+        status: "OVERDUE",
+        dueDate: "2030-12-31",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "Receita Federal",
+      })
+      .expect(201);
+    expect(overdueWithFutureDueDate.body.filingRisk).toBe("OVERDUE");
+    expect(overdueWithFutureDueDate.body.daysUntilDue).toBeTypeOf("number");
+
+    // Fix 4: a past (but valid) effectiveTo must set status to SUPERSEDED.
+    // Note: the NaN guard added to assessLegalSource is defensive for DB-injected data only;
+    // @IsDateString() on the DTO blocks invalid date strings before reaching the service.
+    const superseded = await request(app.getHttpServer())
+      .post("/v1/compliance-obligations")
+      .set(headers)
+      .send({
+        countryCode: "BR",
+        legalEntityId: entity.body.id,
+        regime: "OTHER",
+        filingFrequency: "ANNUAL",
+        status: "IN_PREPARATION",
+        dueDate: "2030-12-31",
+        legalValidationStatus: "PRELIMINARY",
+        sourceReference: "Teste",
+        legalSource: {
+          jurisdictionCode: "BR",
+          instrumentType: "DECREE",
+          instrument: "Decreto revogado",
+          effectiveFrom: "2010-01-01",
+          effectiveTo: "2020-01-01",
+          verificationStatus: "SOURCE_LINKED",
+        },
+      })
+      .expect(201);
+    expect(superseded.body.legalSourceAssessment.status).toBe("SUPERSEDED");
+
     const audit = await request(app.getHttpServer())
       .get("/v1/audit-events")
       .set(headers)
       .expect(200);
-    expect(audit.body.data).toHaveLength(10);
+    expect(audit.body.data).toHaveLength(16);
     expect(audit.body.integrityValid).toBe(true);
   });
 
@@ -504,7 +664,7 @@ describe("API Management Tax", () => {
       seeded: true,
       summary: {
         scenario: "LATAM_CARIBBEAN_LOGISTICS_2026_Q3",
-        recordsCreated: 49,
+        recordsCreated: 65,
         syntheticDataOnly: true,
       },
     });
@@ -594,6 +754,12 @@ describe("API Management Tax", () => {
       .post("/v1/demo/seed")
       .set(viewer)
       .expect(403);
+
+    // Fix 1: compliance-obligations list must also require a role.
+    await request(app.getHttpServer())
+      .get("/v1/compliance-obligations")
+      .set(viewer)
+      .expect(403);
   });
 
   it("enforces country scope for country managers via the central guard", async () => {
@@ -628,6 +794,11 @@ describe("API Management Tax", () => {
       "x-synthetic-subject": "operator-x",
       "x-synthetic-roles": "tax-admin",
     };
+    const dpoHeaders = {
+      "x-synthetic-tenant-id": "tenant-privacy",
+      "x-synthetic-subject": "operator-x",
+      "x-synthetic-roles": "privacy-officer",
+    };
     await request(app.getHttpServer())
       .post("/v1/jurisdictions")
       .set(headers)
@@ -658,9 +829,43 @@ describe("API Management Tax", () => {
       ),
     ).toBe(true);
 
-    const exported = await request(app.getHttpServer())
+    await request(app.getHttpServer())
+      .post("/v1/privacy/processing-activities/review")
+      .set(headers)
+      .send({ version: ropa.body.version, decision: "VALIDATED", notes: "Aprovado pelo DPO." })
+      .expect(403);
+
+    const reviewed = await request(app.getHttpServer())
+      .post("/v1/privacy/processing-activities/review")
+      .set(dpoHeaders)
+      .send({ version: ropa.body.version, decision: "VALIDATED", notes: "Aprovado pelo DPO." })
+      .expect(201);
+    expect(reviewed.body).toMatchObject({
+      legalValidationStatus: "VALIDATED",
+      approvedBy: "operator-x",
+    });
+
+    const afterReview = await request(app.getHttpServer())
+      .get("/v1/privacy/processing-activities")
+      .set(headers)
+      .expect(200);
+    expect(afterReview.body.legalValidationStatus).toBe("VALIDATED");
+
+    await request(app.getHttpServer())
+      .post("/v1/privacy/processing-activities/review")
+      .set(dpoHeaders)
+      .send({ version: "1999-01", decision: "VALIDATED" })
+      .expect(400);
+
+    // tax-admin must be denied: data subject export requires privacy-officer.
+    await request(app.getHttpServer())
       .get("/v1/privacy/data-subjects/operator-x/export")
       .set(headers)
+      .expect(403);
+
+    const exported = await request(app.getHttpServer())
+      .get("/v1/privacy/data-subjects/operator-x/export")
+      .set(dpoHeaders)
       .expect(200);
     expect(exported.body.auditTrail.length).toBeGreaterThanOrEqual(1);
     expect(
@@ -670,17 +875,28 @@ describe("API Management Tax", () => {
       ),
     ).toBe(true);
 
-    const erasure = await request(app.getHttpServer())
+    // tax-admin must be denied: data subject erasure requires privacy-officer.
+    const preErasureCount = exported.body.auditTrail.length;
+    await request(app.getHttpServer())
       .post("/v1/privacy/data-subjects/operator-x/erasure")
       .set(headers)
+      .expect(403);
+
+    // Self-erasure: the requesting actor IS the subject being erased (dpoHeaders also
+    // carries subject = "operator-x"). The new erasure event has actorSubject = "operator-x",
+    // so it is itself retained. The reported count must include it — exactly preCount + 1.
+    // The 403 above left no audit event, so preErasureCount is still accurate.
+    const erasure = await request(app.getHttpServer())
+      .post("/v1/privacy/data-subjects/operator-x/erasure")
+      .set(dpoHeaders)
       .expect(201);
     expect(erasure.body).toMatchObject({
       subject: "operator-x",
       status: "COMPLETED",
     });
-    expect(
-      erasure.body.retainedForLegalObligation.auditEvents,
-    ).toBeGreaterThanOrEqual(1);
+    expect(erasure.body.retainedForLegalObligation.auditEvents).toBe(
+      preErasureCount + 1,
+    );
 
     await request(app.getHttpServer())
       .get("/v1/privacy/retention-policy")
@@ -694,26 +910,85 @@ describe("API Management Tax", () => {
       "x-synthetic-subject": "purge.admin",
       "x-synthetic-roles": "tax-admin",
     };
+    const dpoHeaders = {
+      "x-synthetic-tenant-id": "tenant-purge",
+      "x-synthetic-subject": "purge.admin",
+      "x-synthetic-roles": "privacy-officer",
+    };
     await request(app.getHttpServer())
       .post("/v1/demo/seed")
       .set(headers)
       .expect(201);
 
-    const dryRun = await request(app.getHttpServer())
+    // tax-admin must be denied: irreversible data erasure requires privacy-officer.
+    await request(app.getHttpServer())
       .post("/v1/privacy/retention/purge")
       .set(headers)
+      .expect(403);
+
+    // apply=TRUE (uppercase) was silently treated as false (dry-run) before the fix.
+    // After case-insensitive normalisation it resolves to true → mode APPLIED, not DRY_RUN.
+    const appliedUppercase = await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge?apply=TRUE")
+      .set(dpoHeaders)
+      .expect(201);
+    expect(appliedUppercase.body.mode).toBe("APPLIED");
+
+    // apply=1 is not a recognisable boolean string and must return 400.
+    await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge?apply=1")
+      .set(dpoHeaders)
+      .expect(400);
+
+    const dryRun = await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge")
+      .set(dpoHeaders)
       .expect(201);
     expect(dryRun.body).toMatchObject({ mode: "DRY_RUN", purged: 0 });
     expect(dryRun.body.eligible).toBe(0);
+
+    // Fix 3: ropaApprovals are compliance evidence; they must survive the purge.
+    const ropaVersion = await request(app.getHttpServer())
+      .get("/v1/privacy/processing-activities")
+      .set(headers)
+      .expect(200);
+    await request(app.getHttpServer())
+      .post("/v1/privacy/processing-activities/review")
+      .set(dpoHeaders)
+      .send({ version: ropaVersion.body.version, decision: "VALIDATED", notes: "DPO sign-off." })
+      .expect(201);
 
     process.env.DATA_RETENTION_DAYS = "0";
     try {
       const applied = await request(app.getHttpServer())
         .post("/v1/privacy/retention/purge?apply=true")
-        .set(headers)
+        .set(dpoHeaders)
         .expect(201);
       expect(applied.body.mode).toBe("APPLIED");
       expect(applied.body.purged).toBeGreaterThanOrEqual(1);
+
+      // The ropaApproval record must still be present after the purge.
+      const afterPurge = await request(app.getHttpServer())
+        .get("/v1/privacy/processing-activities")
+        .set(headers)
+        .expect(200);
+      expect(afterPurge.body.legalValidationStatus).toBe("VALIDATED");
+
+      // demoSeeds must also survive: a second seed call must return ALREADY_SEEDED,
+      // not re-execute the full seed (which would indicate the idempotency marker was purged).
+      const secondSeed = await request(app.getHttpServer())
+        .post("/v1/demo/seed")
+        .set(headers)
+        .expect(201);
+      expect(secondSeed.body).toMatchObject({ seeded: false, reason: "ALREADY_SEEDED" });
+
+      // A second purge run must not inflate the purged count (already-tombstoned records
+      // must be excluded from the eligible set).
+      const secondPurge = await request(app.getHttpServer())
+        .post("/v1/privacy/retention/purge?apply=true")
+        .set(dpoHeaders)
+        .expect(201);
+      expect(secondPurge.body.purged).toBe(0);
     } finally {
       delete process.env.DATA_RETENTION_DAYS;
     }
@@ -734,6 +1009,21 @@ describe("API Management Tax", () => {
       .set("x-service-token", "test-service-token")
       .expect(400);
 
+    // Whitespace-only tenantId (%20 = space) must be rejected — before the fix,
+    // `!" "` was falsy-false and the blank tenantId reached purgeForTenant.
+    await request(app.getHttpServer())
+      .post("/v1/system/retention/run?tenantId=%20&apply=true")
+      .set("x-service-token", "test-service-token")
+      .expect(400);
+
+    // apply=TRUE (uppercase) was silently treated as false (dry-run) before the fix.
+    // After case-insensitive normalisation it resolves to true → mode APPLIED, not DRY_RUN.
+    const appliedUppercase = await request(app.getHttpServer())
+      .post("/v1/system/retention/run?tenantId=tenant-job&apply=TRUE")
+      .set("x-service-token", "test-service-token")
+      .expect(201);
+    expect(appliedUppercase.body.mode).toBe("APPLIED");
+
     const report = await request(app.getHttpServer())
       .post("/v1/system/retention/run?tenantId=tenant-job")
       .set("x-service-token", "test-service-token")
@@ -742,6 +1032,110 @@ describe("API Management Tax", () => {
       mode: "DRY_RUN",
       tenantId: "tenant-job",
     });
+  });
+
+  it("system retention apply=true always writes audit event attributed to system:retention-job", async () => {
+    // Before the fix, purgeForTenant only called appendSystem when purged > 0.
+    // A call with apply=true but 0 eligible records left no trace in the audit trail —
+    // an attacker with the service token could probe the system silently.
+    // After the fix, every apply=true call produces an audit event regardless of purged count.
+    const tenantId = "tenant-system-audit";
+    // exportSubject now requires privacy-officer.
+    const dpoHeaders = {
+      "x-synthetic-tenant-id": tenantId,
+      "x-synthetic-subject": "audit-checker",
+      "x-synthetic-roles": "privacy-officer",
+    };
+
+    const result = await request(app.getHttpServer())
+      .post(`/v1/system/retention/run?tenantId=${tenantId}&apply=true`)
+      .set("x-service-token", "test-service-token")
+      .expect(201);
+    expect(result.body).toMatchObject({ mode: "APPLIED", purged: 0 });
+
+    // The system actor must appear in the audit trail even though zero records were purged.
+    const exported = await request(app.getHttpServer())
+      .get(`/v1/privacy/data-subjects/system:retention-job/export`)
+      .set(dpoHeaders)
+      .expect(200);
+    expect(exported.body.auditTrail.length).toBeGreaterThanOrEqual(1);
+    expect(
+      exported.body.auditTrail.every(
+        (event: { actorSubject: string }) =>
+          event.actorSubject === "system:retention-job",
+      ),
+    ).toBe(true);
+  });
+
+  it("purgeByRetention always writes audit event on apply=true, even when purged=0", async () => {
+    // Before the fix, purgeByRetention guarded its audit.append() with
+    // `if (apply && result.purged > 0)`. A DPO calling apply=true against a
+    // tenant with no eligible records would produce no audit event — their
+    // intent to execute the purge was untraceable. purgeForTenant (system path)
+    // was already fixed to always audit; this test proves the human path matches.
+    const dpoHeaders = {
+      "x-synthetic-tenant-id": "tenant-purge-audit-gap",
+      "x-synthetic-subject": "dpo.officer",
+      "x-synthetic-roles": "privacy-officer",
+    };
+
+    // Fresh tenant — no records past the cutoff, so purged=0.
+    const result = await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge?apply=true")
+      .set(dpoHeaders)
+      .expect(201);
+    expect(result.body).toMatchObject({ mode: "APPLIED", purged: 0 });
+
+    // After fix: the audit trail for the DPO actor must contain the retention-purge event.
+    const exported = await request(app.getHttpServer())
+      .get("/v1/privacy/data-subjects/dpo.officer/export")
+      .set(dpoHeaders)
+      .expect(200);
+    expect(
+      exported.body.auditTrail.some(
+        (event: { action: string }) => event.action === "privacy.retention-purge",
+      ),
+    ).toBe(true);
+  });
+
+  it("eraseSubject retainedAuditEvents correctly includes DPO purge events on self-erasure", async () => {
+    // Investigation finding from code review: eraseSubject counts ALL audit events where
+    // actorSubject === subject, including purge events the DPO generated as an operator.
+    // This is CORRECT by design: under LGPD art. 16, any immutable audit record that
+    // identifies the data subject (via actorSubject) constitutes personal data retained for
+    // legal obligation — operational logs are not exempt from this count.
+    //
+    // This test documents and proves the expected behaviour: if a DPO runs apply=true and
+    // then performs self-erasure, the purge event IS included in retainedAuditEvents.
+    const dpoHeaders = {
+      "x-synthetic-tenant-id": "tenant-self-erase-dpo",
+      "x-synthetic-subject": "dpo.selferase",
+      "x-synthetic-roles": "privacy-officer",
+    };
+
+    // DPO runs a purge (purged=0 — no records past cutoff on fresh tenant).
+    // This writes a privacy.retention-purge event with actorSubject='dpo.selferase'.
+    await request(app.getHttpServer())
+      .post("/v1/privacy/retention/purge?apply=true")
+      .set(dpoHeaders)
+      .expect(201);
+
+    // Export to count how many events exist before erasure.
+    const preExport = await request(app.getHttpServer())
+      .get("/v1/privacy/data-subjects/dpo.selferase/export")
+      .set(dpoHeaders)
+      .expect(200);
+    const preCount = preExport.body.auditTrail.length;
+    expect(preCount).toBeGreaterThanOrEqual(1); // the purge event above
+
+    // Self-erasure: actor and subject are the same ('dpo.selferase').
+    // retained = preCount (all prior events incl. purge) + 1 (selfErasure correction
+    //   for the erasure event about to be written, which also has actorSubject='dpo.selferase').
+    const erasure = await request(app.getHttpServer())
+      .post("/v1/privacy/data-subjects/dpo.selferase/erasure")
+      .set(dpoHeaders)
+      .expect(201);
+    expect(erasure.body.retainedForLegalObligation.auditEvents).toBe(preCount + 1);
   });
 
   it("provisions a tenant via the token-guarded system endpoint", async () => {
@@ -793,5 +1187,92 @@ describe("API Management Tax", () => {
       .set("x-service-token", "test-service-token")
       .send(body)
       .expect(503);
+  });
+
+  it("country-scoped actor sees cross-border lane when any country code matches their scope", async () => {
+    // tax-admin creates a BR→MX lane (bypasses CountryScopeGuard on write).
+    const adminHeaders = {
+      "x-synthetic-tenant-id": "tenant-scope-lanes",
+      "x-synthetic-subject": "admin",
+      "x-synthetic-roles": "tax-admin",
+    };
+    await request(app.getHttpServer())
+      .post("/v1/logistics-lanes")
+      .set(adminHeaders)
+      .send({
+        originCountryCode: "BR",
+        destinationCountryCode: "MX",
+        transportMode: "ROAD",
+        currency: "USD",
+        status: "ACTIVE",
+      })
+      .expect(201);
+
+    // BR-scoped actor must see the lane because BR is their jurisdiction (.some() semantics).
+    // Before the fix (.every()), this returned an empty list because MX was not in scope.
+    const brScoped = {
+      "x-synthetic-tenant-id": "tenant-scope-lanes",
+      "x-synthetic-subject": "br-manager",
+      "x-synthetic-roles": "country-manager",
+      "x-synthetic-country-scopes": "BR",
+    };
+    const brLanes = await request(app.getHttpServer())
+      .get("/v1/logistics-lanes")
+      .set(brScoped)
+      .expect(200);
+    expect(
+      brLanes.body.data.some(
+        (lane: { originCountryCode: string }) => lane.originCountryCode === "BR",
+      ),
+    ).toBe(true);
+
+    // MX-only scoped actor must also see the lane for the same reason.
+    const mxScoped = {
+      "x-synthetic-tenant-id": "tenant-scope-lanes",
+      "x-synthetic-subject": "mx-manager",
+      "x-synthetic-roles": "country-manager",
+      "x-synthetic-country-scopes": "MX",
+    };
+    const mxLanes = await request(app.getHttpServer())
+      .get("/v1/logistics-lanes")
+      .set(mxScoped)
+      .expect(200);
+    expect(
+      mxLanes.body.data.some(
+        (lane: { destinationCountryCode: string }) => lane.destinationCountryCode === "MX",
+      ),
+    ).toBe(true);
+
+    // An unrelated scope (AR) must NOT see the BR→MX lane.
+    const arScoped = {
+      "x-synthetic-tenant-id": "tenant-scope-lanes",
+      "x-synthetic-subject": "ar-manager",
+      "x-synthetic-roles": "country-manager",
+      "x-synthetic-country-scopes": "AR",
+    };
+    const arLanes = await request(app.getHttpServer())
+      .get("/v1/logistics-lanes")
+      .set(arScoped)
+      .expect(200);
+    expect(arLanes.body.data).toHaveLength(0);
+  });
+
+  it("repository.create() strips __erased so a pre-tombstoned payload is always visible", async () => {
+    // Verify Fix 2 at the persistence layer: any caller (seed script, internal service,
+    // migration) passing __erased:true must not silently create an invisible record.
+    const repo = app.get(ManagementRecordRepository);
+    const tenantId = "tenant-strip-guard";
+    const id = "pre-tombstone-guard-id";
+    await repo.create("guardTest", {
+      id,
+      tenantId,
+      createdAt: new Date().toISOString(),
+      __erased: true,
+    } as unknown as Parameters<typeof repo.create>[1]);
+    const records = await repo.list("guardTest", tenantId);
+    expect(records.some((r) => r.id === id)).toBe(true);
+    // The __erased field itself must not be present in the stored record.
+    const stored = records.find((r) => r.id === id)!;
+    expect(stored.__erased).toBeUndefined();
   });
 });

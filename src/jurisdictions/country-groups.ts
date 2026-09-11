@@ -28,6 +28,14 @@ export interface JurisdictionCatalogItem {
     "SOVEREIGN_DOMESTIC_LAW" | "TERRITORY_SPECIFIC_WITH_SOVEREIGN_FRAMEWORK";
   legalValidationStatus: "REQUIRED_LOCAL_COUNSEL";
   legalFrameworkNote?: string;
+  /**
+   * Vínculo com ordenamento supranacional. Região ultraperiférica (RUP) integra
+   * o território da UE; país/território ultramarino (PTU/OCT) é associado, mas
+   * está fora do território aduaneiro e do sistema comum de IVA.
+   */
+  supranationalFramework?: "EU_OUTERMOST_REGION" | "EU_OVERSEAS_ASSOCIATION";
+  restrictionStatus:
+    "NONE" | "SANCTIONS_SCREENING_REQUIRED" | "RESTRICTED";
   tierReference: 1 | 2 | 3 | 4 | 5 | null;
   documentaryBasis:
     "EXPLICITLY_NAMED" | "AGGREGATE_REFERENCE" | "REGIONAL_CATALOG";
@@ -48,6 +56,7 @@ const country = (
   name: string,
   tierReference: JurisdictionCatalogItem["tierReference"],
   documentaryBasis: JurisdictionCatalogItem["documentaryBasis"] = "EXPLICITLY_NAMED",
+  restrictionStatus: JurisdictionCatalogItem["restrictionStatus"] = "NONE",
 ): JurisdictionCatalogItem => ({
   countryCode,
   name,
@@ -55,6 +64,7 @@ const country = (
   sovereignAuthority: null,
   applicableLawModel: "SOVEREIGN_DOMESTIC_LAW",
   legalValidationStatus: "REQUIRED_LOCAL_COUNSEL",
+  restrictionStatus,
   tierReference,
   documentaryBasis,
   operationalPresence: "UNCONFIRMED",
@@ -66,6 +76,8 @@ const territory = (
   jurisdictionType: Exclude<JurisdictionType, "SOVEREIGN_STATE">,
   sovereignAuthority: SovereignAuthority,
   legalFrameworkNote: string,
+  supranationalFramework?: JurisdictionCatalogItem["supranationalFramework"],
+  restrictionStatus: JurisdictionCatalogItem["restrictionStatus"] = "NONE",
 ): JurisdictionCatalogItem => ({
   countryCode,
   name,
@@ -74,6 +86,8 @@ const territory = (
   applicableLawModel: "TERRITORY_SPECIFIC_WITH_SOVEREIGN_FRAMEWORK",
   legalValidationStatus: "REQUIRED_LOCAL_COUNSEL",
   legalFrameworkNote,
+  ...(supranationalFramework ? { supranationalFramework } : {}),
+  restrictionStatus,
   tierReference: null,
   documentaryBasis: "REGIONAL_CATALOG",
   operationalPresence: "UNCONFIRMED",
@@ -108,7 +122,7 @@ export const COUNTRY_GROUPS: CountryGroup[] = [
       country("AG", "Antígua e Barbuda", null, "REGIONAL_CATALOG"),
       country("BS", "Bahamas", null, "REGIONAL_CATALOG"),
       country("BB", "Barbados", null, "REGIONAL_CATALOG"),
-      country("CU", "Cuba", 5),
+      country("CU", "Cuba", 5, "EXPLICITLY_NAMED", "SANCTIONS_SCREENING_REQUIRED"),
       country("DM", "Dominica", null, "REGIONAL_CATALOG"),
       country("DO", "República Dominicana", null, "REGIONAL_CATALOG"),
       country("GD", "Granada", null, "REGIONAL_CATALOG"),
@@ -154,6 +168,7 @@ export const COUNTRY_GROUPS: CountryGroup[] = [
         "OVERSEAS_REGION",
         { countryCode: "FR", name: "França" },
         "É região ultraperiférica francesa; o enquadramento deve considerar direito francês, direito da União Europeia e regras locais aplicáveis.",
+        "EU_OUTERMOST_REGION",
       ),
       territory(
         "MQ",
@@ -161,6 +176,72 @@ export const COUNTRY_GROUPS: CountryGroup[] = [
         "OVERSEAS_REGION",
         { countryCode: "FR", name: "França" },
         "É região ultraperiférica francesa; o enquadramento deve considerar direito francês, direito da União Europeia e regras locais aplicáveis.",
+        "EU_OUTERMOST_REGION",
+      ),
+      territory(
+        "SX",
+        "Sint Maarten",
+        "CONSTITUENT_COUNTRY",
+        { countryCode: "NL", name: "Reino dos Países Baixos" },
+        "É país constituinte autônomo dentro do Reino dos Países Baixos; legislação local e matérias do Reino devem ser avaliadas em conjunto.",
+      ),
+      territory(
+        "BQ",
+        "Países Baixos Caribenhos (Bonaire, Sint Eustatius e Saba)",
+        "NON_SOVEREIGN_TERRITORY",
+        { countryCode: "NL", name: "Reino dos Países Baixos" },
+        "São municípios especiais dos Países Baixos, com regime fiscal próprio (sem IVA clássico; imposto sobre bens ABB); avaliar legislação local e do Reino.",
+      ),
+      territory(
+        "VG",
+        "Ilhas Virgens Britânicas",
+        "OVERSEAS_TERRITORY",
+        { countryCode: "GB", name: "Reino Unido" },
+        "É território ultramarino britânico com autoridades e legislação locais; centro financeiro com regras de substância econômica relevantes.",
+      ),
+      territory(
+        "VI",
+        "Ilhas Virgens Americanas",
+        "NON_SOVEREIGN_TERRITORY",
+        { countryCode: "US", name: "Estados Unidos" },
+        "É território não incorporado dos Estados Unidos, com sistema tributário espelhado e regras de coordenação com os EUA.",
+      ),
+      territory(
+        "TC",
+        "Ilhas Turcas e Caicos",
+        "OVERSEAS_TERRITORY",
+        { countryCode: "GB", name: "Reino Unido" },
+        "É território ultramarino britânico com autoridades e legislação locais, dentro do vínculo constitucional com o Reino Unido.",
+      ),
+      territory(
+        "AI",
+        "Anguilla",
+        "OVERSEAS_TERRITORY",
+        { countryCode: "GB", name: "Reino Unido" },
+        "É território ultramarino britânico com autoridades e legislação locais, dentro do vínculo constitucional com o Reino Unido.",
+      ),
+      territory(
+        "MS",
+        "Montserrat",
+        "OVERSEAS_TERRITORY",
+        { countryCode: "GB", name: "Reino Unido" },
+        "É território ultramarino britânico com autoridades e legislação locais, dentro do vínculo constitucional com o Reino Unido.",
+      ),
+      territory(
+        "MF",
+        "Saint-Martin",
+        "OVERSEAS_REGION",
+        { countryCode: "FR", name: "França" },
+        "É coletividade francesa e região ultraperiférica da UE, com autonomia fiscal (código tributário próprio); avaliar direito francês, da UE e regras locais.",
+        "EU_OUTERMOST_REGION",
+      ),
+      territory(
+        "BL",
+        "Saint-Barthélemy",
+        "OVERSEAS_TERRITORY",
+        { countryCode: "FR", name: "França" },
+        "É coletividade francesa com estatuto de país e território ultramarino (PTU/OCT), fora do território aduaneiro e de IVA da UE, com autonomia fiscal local.",
+        "EU_OVERSEAS_ASSOCIATION",
       ),
     ],
   },
@@ -182,7 +263,7 @@ export const COUNTRY_GROUPS: CountryGroup[] = [
       country("BO", "Bolívia", 2),
       country("GY", "Guiana", 4, "AGGREGATE_REFERENCE"),
       country("SR", "Suriname", 4, "AGGREGATE_REFERENCE"),
-      country("VE", "Venezuela", 5),
+      country("VE", "Venezuela", 5, "EXPLICITLY_NAMED", "SANCTIONS_SCREENING_REQUIRED"),
     ],
     territories: [
       territory(
@@ -191,6 +272,7 @@ export const COUNTRY_GROUPS: CountryGroup[] = [
         "OVERSEAS_REGION",
         { countryCode: "FR", name: "França" },
         "É região ultraperiférica francesa na América do Sul; o enquadramento deve considerar direito francês, direito da União Europeia e regras locais aplicáveis.",
+        "EU_OUTERMOST_REGION",
       ),
     ],
   },

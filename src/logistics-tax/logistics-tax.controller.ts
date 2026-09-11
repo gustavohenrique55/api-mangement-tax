@@ -5,6 +5,7 @@ import { CountryScope } from "../security/country-scope.decorator";
 import { RequireRoles } from "../security/roles.decorator";
 import {
   CreateCustomsRegimeDto,
+  CreateComplianceObligationDto,
   CreateEstablishmentDto,
   CreateIntegrationConnectionDto,
   CreateLegalEntityDto,
@@ -232,6 +233,28 @@ export class LogisticsTaxController {
       "integration-connection",
       request,
       { ...body },
+    );
+  }
+
+  @RequireRoles("tax-admin", "country-manager")
+  @Get("compliance-obligations")
+  async listComplianceObligations(@Req() request: Request) {
+    return { data: await this.domain.list("complianceObligations", request) };
+  }
+
+  @RequireRoles("tax-admin", "country-manager")
+  @CountryScope("countryCode")
+  @Post("compliance-obligations")
+  createComplianceObligation(
+    @Req() request: Request,
+    @Body() body: CreateComplianceObligationDto,
+  ) {
+    return this.create(
+      "complianceObligations",
+      "compliance-obligation",
+      request,
+      { ...body },
+      [body.countryCode],
     );
   }
 

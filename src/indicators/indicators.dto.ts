@@ -55,6 +55,9 @@ export class CreateEtrMeasurementDto {
   @IsNumber() foreignExchangeEffect!: number;
   @IsNumber() baselineEtrPercent!: number;
   @IsNumber() targetEtrPercent!: number;
+  @IsOptional()
+  @IsIn(["NOT_ENACTED", "QDMTT", "IIR", "UTPR", "IIR_AND_QDMTT", "FULL_GLOBE"])
+  globeRegimeStatus?: string;
   @IsOptional() @IsNumber() optimizationImpact?: number;
   @IsOptional() @IsNumber() legislativeImpact?: number;
   @IsOptional() @IsNumber() contingencyImpact?: number;
