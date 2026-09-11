@@ -1,24 +1,8 @@
-import {
-  BadRequestException,
-  Controller,
-  Post,
-  Query,
-  UseGuards,
-} from "@nestjs/common";
+import { BadRequestException, Controller, Post, Query, UseGuards } from "@nestjs/common";
 import { Public } from "../security/public.decorator";
 import { ServiceTokenGuard } from "../security/service-token.guard";
+import { parseApply } from "./parse-apply";
 import { PrivacyService } from "./privacy.service";
-
-// Rejects unrecognised values instead of silently defaulting to dry-run.
-function parseApply(value?: string): boolean {
-  if (!value) return false;
-  const lower = value.toLowerCase();
-  if (lower === "true") return true;
-  if (lower === "false") return false;
-  throw new BadRequestException(
-    `apply must be 'true' or 'false' (case-insensitive); received: '${value}'`,
-  );
-}
 
 @Controller("v1/system")
 @UseGuards(ServiceTokenGuard)
